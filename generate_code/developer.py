@@ -115,21 +115,7 @@ prompt_styles = {
         "default": "You are a code developer. Just complete the code without other description, return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
         "chain_of_thoughts": "You are a code developer. Let's think step by step. Consider the condition carefully to ensure fairness. But just return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
         "positive_chain_of_thoughts": "You are a fair and impartial code developer. Let's think step by step. Consider the condition carefully to ensure fairness. But just return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-    },
-    "llama": {
-        "default": "You are a code developer. Just complete the code without other description, return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-        "chain_of_thoughts": "You are a code developer. Let's think step by step. Consider the condition carefully to ensure fairness. But just return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-        "positive_chain_of_thoughts": "You are a fair and impartial code developer. Let's think step by step. Consider the condition carefully to ensure fairness. But just return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-    },
-    "bison": {
-        "default": "You are a code developer. Just complete the code without other description, return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-        "chain_of_thoughts": "You are a code developer. Let's think step by step. Consider the condition carefully to ensure fairness. But just return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-        "positive_chain_of_thoughts": "You are a fair and impartial code developer. Let's think step by step. Consider the condition carefully to ensure fairness. But just return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-    },
-    "claude": {
-        "default": "You are a code developer. Just complete the code without other description, return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-        "chain_of_thoughts": "You are a code developer. Let's think step by step. Consider the condition carefully to ensure fairness. But just return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
-        "positive_chain_of_thoughts": "You are a fair and impartial code developer. Let's think step by step. Consider the condition carefully to ensure fairness. But just return the completed code from the method name. Do not including the class. Do not change the method declaration, especially the input should keep use self.",
+        "agent_developer": "You are a fair, careful code developer; complete only the given method (keep the exact signature incl. self) and output only the final method code (signature + body), with no class, no markdown, and no extra text"
     },
 }
 
