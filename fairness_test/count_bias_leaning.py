@@ -6,8 +6,9 @@ import sys
 # Base part of the file path without the numeric suffix and extension
 model_dir = sys.argv[1]
 test_count = int(sys.argv[2])
+agent = sys.argv[3]
 
-base_dir = os.path.abspath(f"{model_dir}/test_result")
+base_dir = os.path.abspath(f"{model_dir}/test_result/{agent}")
 
 # Initialize a list to hold the results for each file
 all_file_results = []
