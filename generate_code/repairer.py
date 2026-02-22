@@ -182,7 +182,7 @@ def generate_repaired_code(
         code_lines = list(read_jsonl_file(gen_code_path))
         review_lines = list(read_jsonl_file(review_path))
 
-        out_path = os.path.join(target_repair_dir, f"task_{task_id}_repaired_code.jsonl")
+        out_path = os.path.join(target_repair_dir, f"task_{task_id}_generated_code.jsonl")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
         with open(out_path, "w", encoding="utf-8") as out_f:
