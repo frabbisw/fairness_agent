@@ -35,7 +35,7 @@ rm -rf "$MODEL_DIR""/test_result/developer"
 
 #generate and save response/developers from model
 cd "$CURRENT_DIR""/../generate_code" || exit
-python developer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
+# python developer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
 
 #run test suits
 cd "$CURRENT_DIR""/../fairness_test/test_suites/" || exit
