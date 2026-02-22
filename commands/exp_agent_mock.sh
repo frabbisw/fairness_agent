@@ -66,6 +66,7 @@ echo "===================="
 
 
 #reviewer agent
+cd "$CURRENT_DIR""/../generate_code" || exit
 python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
 
 
