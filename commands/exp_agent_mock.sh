@@ -22,7 +22,7 @@ echo "MODEL_NAME:" "$MODEL_NAME"
 echo "TEST_COUNT:" "$TEST_COUNT"
 echo "-------------------"
 
-echo developer.py "$DATA_PATH" "$MODEL_DIR"/response "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
+echo developer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
 echo parse_bias_info.py "$MODEL_DIR"/test_result/developer/log_files "$MODEL_DIR"/test_result/developer/bias_info_files "$SAMPLING"
 echo summary_result.py "$MODEL_DIR"
 echo count_bias.py "$MODEL_DIR"
@@ -33,19 +33,19 @@ echo "===================="
 # Delete the previous result files
 rm -rf "$MODEL_DIR""/test_result/developer"
 
-#generate and save responses from model
+#generate and save response/developers from model
 cd "$CURRENT_DIR""/../generate_code" || exit
-# python developer.py "$DATA_PATH" "$MODEL_DIR"/response "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
+# python developer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
 
 #run test suits
 cd "$CURRENT_DIR""/../fairness_test/test_suites/" || exit
 
-BASE_DIR="$MODEL_DIR""/response"
+BASE_DIR="$MODEL_DIR""/response/developer"
 LOG_DIR="$MODEL_DIR""/test_result/developer/log_files"
 REPORT_BASE_DIR="$MODEL_DIR""/test_result/developer/inconsistency_files"
 
 cp config_template.py config.py
-sed -i "s|##PATH##TO##RESPONSE##|$BASE_DIR|g" config.py
+sed -i "s|##PATH##TO##response/developer##|$BASE_DIR|g" config.py
 sed -i "s|##PATH##TO##LOG##FILES##|$LOG_DIR|g" config.py
 sed -i "s|##PATH##TO##INCONSISTENCY##FILES##|$REPORT_BASE_DIR|g" config.py
 
