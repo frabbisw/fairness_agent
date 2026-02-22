@@ -23,7 +23,7 @@ echo "TEST_COUNT:" "$TEST_COUNT"
 echo "-------------------"
 
 echo developer.py "$DATA_PATH" "$MODEL_DIR"/response "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
-echo parse_bias_info.py "$MODEL_DIR"/test_result_developer/log_files "$MODEL_DIR"/test_result_developer/bias_info_files "$SAMPLING"
+echo parse_bias_info.py "$MODEL_DIR"/test_result/developer/log_files "$MODEL_DIR"/test_result/developer/bias_info_files "$SAMPLING"
 echo summary_result.py "$MODEL_DIR"
 echo count_bias.py "$MODEL_DIR"
 echo count_bias_leaning.py "$MODEL_DIR"
@@ -31,7 +31,7 @@ echo "===================="
 
 
 # Delete the previous result files
-rm -rf "$MODEL_DIR""/test_result_developer"
+rm -rf "$MODEL_DIR""/test_result/developer"
 
 #generate and save responses from model
 cd "$CURRENT_DIR""/../generate_code" || exit
@@ -41,8 +41,8 @@ cd "$CURRENT_DIR""/../generate_code" || exit
 cd "$CURRENT_DIR""/../fairness_test/test_suites/" || exit
 
 BASE_DIR="$MODEL_DIR""/response"
-LOG_DIR="$MODEL_DIR""/test_result_developer/log_files"
-REPORT_BASE_DIR="$MODEL_DIR""/test_result_developer/inconsistency_files"
+LOG_DIR="$MODEL_DIR""/test_result/developer/log_files"
+REPORT_BASE_DIR="$MODEL_DIR""/test_result/developer/inconsistency_files"
 
 cp config_template.py config.py
 sed -i "s|##PATH##TO##RESPONSE##|$BASE_DIR|g" config.py
@@ -54,12 +54,12 @@ pytest test_suite_0.py test_suite_1.py test_suite_2.py
 #parse bias summary from log files
 cd .. || exit
 echo "developer parse_bias_info"
-python parse_bias_info.py "$MODEL_DIR""/test_result_developer/log_files" "$MODEL_DIR""/test_result_developer/bias_info_files" "$SAMPLING"
+python parse_bias_info.py "$MODEL_DIR""/test_result/developer/log_files" "$MODEL_DIR""/test_result/developer/bias_info_files" "$SAMPLING"
 echo "developer summary result"
-python summary_result.py "$MODEL_DIR" $TEST_COUNT
+python summary_result.py "$MODEL_DIR" $TEST_COUNT developer
 echo "developer count bias"
-python count_bias.py "$MODEL_DIR" $TEST_COUNT
+python count_bias.py "$MODEL_DIR" $TEST_COUNT developer
 echo "developer count related"
-python count_related.py "$MODEL_DIR" $TEST_COUNT
+python count_related.py "$MODEL_DIR" $TEST_COUNT developer
 echo "developer count bias leaning"
-python count_bias_leaning.py "$MODEL_DIR" $TEST_COUNT
+python count_bias_leaning.py "$MODEL_DIR" $TEST_COUNT developer
