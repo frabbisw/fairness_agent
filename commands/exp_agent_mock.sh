@@ -66,6 +66,6 @@ python count_bias_leaning.py "$MODEL_DIR" $TEST_COUNT developer
 
 
 #reviewer agent
-python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
+python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
 
 
