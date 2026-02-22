@@ -37,10 +37,12 @@ def count_bias_attributes(file_path):
 all_results = {}
 
 model_path = sys.argv[1]
+test_count = int(sys.argv[2])
+
 base_dir = os.path.abspath(f"{model_path}/test_result")
 
 # Loop through the file numbers, starting from 0 to 342
-for i in range(343):  # 343 files, starting from index 0
+for i in range(test_count):  # test_count files, starting from index 0
     file_name = f'bias_info{i}.jsonl'
     file_path = os.path.join(base_dir, "bias_info_files", file_name)
 
