@@ -20,7 +20,7 @@ llama_client = OpenAI(
     base_url="https://api.together.xyz/v1",
 )
 
-google_client = datastore.Client()
+# google_client = datastore.Client()
 
 anthropic_client = anthropic.Anthropic(
     api_key=os.environ.get("ANTHROPIC_API_KEY")
