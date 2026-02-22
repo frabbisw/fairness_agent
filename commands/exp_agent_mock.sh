@@ -29,8 +29,6 @@ echo count_bias.py "$MODEL_DIR"
 echo count_bias_leaning.py "$MODEL_DIR"
 echo "===================="
 
-
-
 # #generate and save response/developers from model
 # cd "$CURRENT_DIR""/../generate_code" || exit
 # # python developer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME"
@@ -67,7 +65,7 @@ echo "===================="
 
 #reviewer agent
 cd "$CURRENT_DIR""/../generate_code" || exit
-# python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
+python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
 
 #repair agent
 python repairer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$MODEL_DIR"/response/repairer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME"
