@@ -115,7 +115,7 @@ def repair_conversation(style, qs, temp, model_name):
 # Prompt styles (same dict pattern)
 prompt_styles = {
     "gpt": {
-        "agent_repair": (
+        "agent": (
             "You are a code developer fixing code based on reviewer feedback. "
             "Given the original context and the current method, apply ONLY the review instructions. "
             "Return ONLY the repaired method code (signature + body), no class, no markdown, no extra text. "
@@ -123,19 +123,19 @@ prompt_styles = {
         ),
     },
     "llama": {
-        "agent_repair": (
+        "agent": (
             "Fix the method using the review instructions. "
             "Output ONLY the repaired method (signature + body). No class. No extra text. Do not change signature."
         ),
     },
     "bison": {
-        "agent_repair": (
+        "agent": (
             "Repair the method using the review instructions. "
             "Return only the repaired method code (signature + body). No class. Do not change the signature."
         ),
     },
     "claude": {
-        "agent_repair": (
+        "agent": (
             "You are repairing a Python method based on reviewer feedback. "
             "Return ONLY the repaired method code (signature + body), no class, no markdown, no extra text. "
             "Do NOT change the method signature (including self)."
