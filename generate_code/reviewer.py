@@ -225,12 +225,13 @@ if __name__ == "__main__":
     """
     prompts_jsonl_path = sys.argv[1]
     src_gc_base_dir = sys.argv[2]
-    num_samples = int(sys.argv[3])
+    target_review_base_dir = sys.argv[3]
+    num_samples = int(sys.argv[4])
 
-    TEMPERATURE = 1.0 if len(sys.argv) < 5 else float(sys.argv[4])
-    PROMPT_STYLE = "agent_reviewer" if len(sys.argv) < 6 else sys.argv[5]
-    MODEL_NAME = sys.argv[6]
-    BIAS_INFO_BASE_PATH = sys.argv[7]
+    TEMPERATURE = float(sys.argv[5])
+    PROMPT_STYLE = sys.argv[6]
+    MODEL_NAME = sys.argv[7]
+    BIAS_INFO_BASE_PATH = sys.argv[8]
 
     print("prompts_jsonl_path", prompts_jsonl_path)
     print("src_gc_base_dir", src_gc_base_dir)
