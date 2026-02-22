@@ -5,13 +5,15 @@ import sys
 
 # Base part of the file path without the numeric suffix and extension
 model_dir = sys.argv[1]
+test_count = int(sys.argv[2])
+
 base_dir = os.path.abspath(f"{model_dir}/test_result")
 
 # Initialize a list to hold the results for each file
 all_file_results = []
 
 # Loop through the file numbers
-for i in range(0, 343):  # Assuming the files are numbered from 1 to 343
+for i in range(0, test_count):  # Assuming the files are numbered from 1 to test_count
     file_name = f"summary_output_suite_task_{i}.csv"
     file_path = os.path.join(base_dir, "summary_bias", file_name)
     attribute_bias_counts = {}  # Reset for each file
