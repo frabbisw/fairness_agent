@@ -63,3 +63,9 @@ echo "developer count related"
 python count_related.py "$MODEL_DIR" $TEST_COUNT developer
 echo "developer count bias leaning"
 python count_bias_leaning.py "$MODEL_DIR" $TEST_COUNT developer
+
+
+#reviewer agent
+python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
+
+
