@@ -56,7 +56,7 @@ cd .. || exit
 echo "developer parse_bias_info"
 python parse_bias_info.py "$MODEL_DIR""/test_result_developer/log_files" "$MODEL_DIR""/test_result_developer/bias_info_files" "$SAMPLING"
 echo "developer summary result"
-python summary_result.py "$MODEL_DIR"
+python summary_result.py "$MODEL_DIR" $TEST_COUNT
 echo "developer count bias"
 python count_bias.py "$MODEL_DIR" $TEST_COUNT
 echo "developer count related"
