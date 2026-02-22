@@ -69,4 +69,4 @@ cd "$CURRENT_DIR""/../generate_code" || exit
 # python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" agent_reviewer "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
 
 #repair agent
-python repair.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$MODEL_DIR"/response/repairer "$SAMPLING" "$TEMPERATURE" agent_repair "$MODEL_NAME"
+python repairer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$MODEL_DIR"/response/repairer "$SAMPLING" "$TEMPERATURE" agent_repair "$MODEL_NAME"
