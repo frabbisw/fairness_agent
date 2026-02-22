@@ -64,9 +64,9 @@ echo "===================="
 # echo "developer count bias leaning"
 # python count_bias_leaning.py "$MODEL_DIR" $TEST_COUNT developer
 
-
 #reviewer agent
 cd "$CURRENT_DIR""/../generate_code" || exit
-python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" agent_reviewer "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
+# python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" agent_reviewer "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"
 
-
+#repair agent
+python repair.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$MODEL_DIR"/response/repairer "$SAMPLING" "$TEMPERATURE" agent_repair "$MODEL_NAME
