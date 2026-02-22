@@ -35,7 +35,7 @@ rm -rf "$MODEL_DIR""/test_result_developer"
 
 #generate and save responses from model
 cd "$CURRENT_DIR""/../generate_code" || exit
-python developer.py "$DATA_PATH" "$MODEL_DIR"/response "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
+# python developer.py "$DATA_PATH" "$MODEL_DIR"/response "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
 
 #run test suits
 cd "$CURRENT_DIR""/../fairness_test/test_suites/" || exit
@@ -49,7 +49,7 @@ sed -i "s|##PATH##TO##RESPONSE##|$BASE_DIR|g" config.py
 sed -i "s|##PATH##TO##LOG##FILES##|$LOG_DIR|g" config.py
 sed -i "s|##PATH##TO##INCONSISTENCY##FILES##|$REPORT_BASE_DIR|g" config.py
 
-pytest test_suite_0.py test_suite_1 test_suite_2
+pytest test_suite_0.py test_suite_1.py test_suite_2.py
 
 #parse bias summary from log files
 cd .. || exit
