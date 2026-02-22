@@ -40,7 +40,7 @@ model_path = sys.argv[1]
 test_count = int(sys.argv[2])
 agent = sys.argv[3]
 
-base_dir = os.path.abspath(f"{model_path}/{agent}/test_result")
+base_dir = os.path.abspath(f"{model_path}/test_result/{agent}")
 
 # Loop through the file numbers, starting from 0 to 342
 for i in range(test_count):  # test_count files, starting from index 0
