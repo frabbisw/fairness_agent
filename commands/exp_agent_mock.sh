@@ -11,6 +11,7 @@ PROMPT_STYLE=$3
 DATA_PATH=$4
 MODEL_DIR=$5
 MODEL_NAME=$6
+TEST_COUNT=$7
 
 echo "SAMPLING:" "$SAMPLING"
 echo "TEMPERATURE:" "$TEMPERATURE"
@@ -18,6 +19,7 @@ echo "PROMPT_STYLE:" "$PROMPT_STYLE"
 echo "DATA_PATH:" "$DATA_PATH"
 echo "MODEL_DIR:" "$MODEL_DIR"
 echo "MODEL_NAME:" "$MODEL_NAME"
+echo "TEST_COUNT:" "$TEST_COUNT"
 echo "-------------------"
 
 echo developer.py "$DATA_PATH" "$MODEL_DIR"/response "$SAMPLING" "$TEMPERATURE" "$PROMPT_STYLE" "$MODEL_NAME"
@@ -56,8 +58,8 @@ python parse_bias_info.py "$MODEL_DIR""/test_result_developer/log_files" "$MODEL
 echo "developer summary result"
 python summary_result.py "$MODEL_DIR"
 echo "developer count bias"
-python count_bias.py "$MODEL_DIR"
+python count_bias.py "$MODEL_DIR" $TEST_COUNT
 echo "developer count related"
-python count_related.py "$MODEL_DIR"
+python count_related.py "$MODEL_DIR" $TEST_COUNT
 echo "developer count bias leaning"
-python count_bias_leaning.py "$MODEL_DIR"
+python count_bias_leaning.py "$MODEL_DIR" $TEST_COUNT
