@@ -114,33 +114,12 @@ def repair_conversation(style, qs, temp, model_name):
 
 # Prompt styles (same dict pattern)
 prompt_styles = {
-    "gpt": {
-        "agent": (
-            "You are a code developer fixing code based on reviewer feedback. "
-            "Given the original context and the current method, apply ONLY the review instructions. "
-            "Return ONLY the repaired method code (signature + body), no class, no markdown, no extra text. "
-            "Do NOT change the method signature (including self)."
-        ),
-    },
-    "llama": {
-        "agent": (
-            "Fix the method using the review instructions. "
-            "Output ONLY the repaired method (signature + body). No class. No extra text. Do not change signature."
-        ),
-    },
-    "bison": {
-        "agent": (
-            "Repair the method using the review instructions. "
-            "Return only the repaired method code (signature + body). No class. Do not change the signature."
-        ),
-    },
-    "claude": {
-        "agent": (
-            "You are repairing a Python method based on reviewer feedback. "
-            "Return ONLY the repaired method code (signature + body), no class, no markdown, no extra text. "
-            "Do NOT change the method signature (including self)."
-        ),
-    },
+    "gpt": {        
+        "agent": '''You are a code repairer. Apply the given JSON edits to CURRENT_METHOD exactly. 
+        "old" strings must be matched verbatim; perform operations in order. 
+        Output ONLY the final repaired method code (signature+body). 
+        No class, no markdown, no extra text. Do not change the method signature (including self).'''
+    }
 }
 
 
@@ -201,14 +180,20 @@ def generate_repaired_code(
                     continue
 
                 # Build repair request: prompt + current method + reviewer instruction
+                # qs = (
+                #     "PROMPT (context + stub):\n"
+                #     f"{prompt}\n\n"
+                #     "CURRENT_METHOD:\n"
+                #     f"{current_method}\n\n"
+                #     "REVIEW_INSTRUCTION:\n"
+                #     f"{review_text}\n\n"
+                #     "Return ONLY the repaired method code (signature + body)."
+                # )
                 qs = (
-                    "PROMPT (context + stub):\n"
-                    f"{prompt}\n\n"
                     "CURRENT_METHOD:\n"
                     f"{current_method}\n\n"
-                    "REVIEW_INSTRUCTION:\n"
-                    f"{review_text}\n\n"
-                    "Return ONLY the repaired method code (signature + body)."
+                    "EDITS_JSON:\n"
+                    f"{review_text}\n"
                 )
 
                 repaired_code = repair_conversation(style, qs, temperature, model_name)
