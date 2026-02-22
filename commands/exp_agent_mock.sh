@@ -45,7 +45,7 @@ LOG_DIR="$MODEL_DIR""/test_result/developer/log_files"
 REPORT_BASE_DIR="$MODEL_DIR""/test_result/developer/inconsistency_files"
 
 cp config_template.py config.py
-sed -i "s|##PATH##TO##response/developer##|$BASE_DIR|g" config.py
+sed -i "s|##PATH##TO##RESPONSE##|$BASE_DIR|g" config.py
 sed -i "s|##PATH##TO##LOG##FILES##|$LOG_DIR|g" config.py
 sed -i "s|##PATH##TO##INCONSISTENCY##FILES##|$REPORT_BASE_DIR|g" config.py
 
