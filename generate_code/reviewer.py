@@ -111,30 +111,11 @@ def review_conversation(style, qs, temp, model_name) -> str:
 # --- Prompt styles (same dict pattern as developer.py) ---
 prompt_styles = {
     "gpt": {
-        "agent_reviewer": (
-            "You are a fairness-focused code reviewer. "
-            "Given a prompt, generated code, and bias_info, output ONLY brief, exact, actionable instructions "
-            "to remove bias. Do NOT output code. Do NOT add extra text."
-        )
-    },
-    "llama": {
-        "agent_reviewer": (
-            "You are a fairness-focused code reviewer. "
-            "Output ONLY brief, exact instructions to remove bias (no code, no extra text)."
-        )
-    },
-    "bison": {
-        "agent_reviewer": (
-            "You are a fairness-focused code reviewer. "
-            "Return only short instructions to remove bias. No code."
-        )
-    },
-    "claude": {
-        "agent_reviewer": (
-            "You are a fairness-focused code reviewer. "
-            "Output ONLY brief, exact instructions to remove bias. Do not output code."
-        )
-    },
+        "agent": '''You are a fairness-aware code reviewer. 
+        Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
+        "old" MUST be an exact substring of GENERATED_CODE. 
+        Make minimal edits to remove all dependence on SENSITIVE_ATTRIBUTES. No code, no extra text.'''
+    }
 }
 
 
@@ -200,9 +181,8 @@ def generate_reviews_from_bias_info(
                     f"{prompt}\n\n"
                     "GENERATED_CODE:\n"
                     f"{code_obj.get('generated_code','')}\n\n"
-                    "BIAS_INFO:\n"
-                    f"{bias_obj['bias_info']}\n\n"
-                    "Return ONLY the exact instructions to remove the mentioned bias (no code)."
+                    "SENSITIVE_ATTRIBUTES:\n"
+                    f"{bias_obj['bias_info']}\n"
                 )
 
                 instruction = review_conversation(style, qs, temperature, model_name)
