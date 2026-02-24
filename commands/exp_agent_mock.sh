@@ -33,7 +33,7 @@ echo "===================="
 
 #generate and save response/developers from model
 cd "$CURRENT_DIR""/../generate_code" || exit
-python developer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME" $TEST_START $TEST_COUNT
+# python developer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME" $TEST_START $TEST_COUNT
 
 # Delete the previous result files
 rm -rf "$MODEL_DIR""/test_result/developer"
@@ -68,10 +68,10 @@ python count_bias_leaning.py "$MODEL_DIR" $TEST_START $TEST_COUNT developer
 
 #reviewer agent
 cd "$CURRENT_DIR""/../generate_code" || exit
-python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"  $TEST_START $TEST_COUNT
+# python reviewer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME" "$MODEL_DIR""/test_result/developer/bias_info_files"  $TEST_START $TEST_COUNT
 
 #repair agent
-python repairer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$MODEL_DIR"/response/repairer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME"  $TEST_START $TEST_COUNT
+# python repairer.py "$DATA_PATH" "$MODEL_DIR"/response/developer "$MODEL_DIR"/response/reviewer "$MODEL_DIR"/response/repairer "$SAMPLING" "$TEMPERATURE" agent "$MODEL_NAME"  $TEST_START $TEST_COUNT
 
 # Delete the previous result files
 rm -rf "$MODEL_DIR""/test_result/repairer"
