@@ -119,8 +119,11 @@ prompt_styles = {
     },
 }
 
-def generate_code_from_prompts(input_file_path, output_dir, iterations, temperature, style, model_name):
-    for json_obj in read_jsonl_file(input_file_path):
+def generate_code_from_prompts(input_file_path, output_dir, iterations, temperature, style, model_name, test_start, test_end):
+    # for json_obj in read_jsonl_file(input_file_path):
+    for index, json_obj in enumerate(islice(read_jsonl_file(input_file_path), test_start, test_end), start=test_start):
+        print(f"Processing line {index}")
+        print("-"*50)
         task_id = json_obj.get("task_id", "default")
         prompt = json_obj.get("prompt", "")  # Adjust the key name if needed
         if prompt:
@@ -159,6 +162,10 @@ PROMPT_STYLE = "default" if len(sys.argv) < 6 else sys.argv[5]
 
 MODEL_NAME = sys.argv[6]
 
+TEST_START = sys.argv[7]
+
+TEST_END = sys.argv[8]
+
 print("jsonl_input_file_path", jsonl_input_file_path)
 print("output_base_dir", output_base_dir)
 print("num_samples", num_samples)
@@ -167,4 +174,4 @@ print("PROMPT_STYLE", PROMPT_STYLE)
 print("MODEL_NAME", MODEL_NAME)
 
 os.makedirs(output_base_dir, exist_ok=True)
-generate_code_from_prompts(jsonl_input_file_path, output_base_dir, num_samples, TEMPERATURE, prompt_styles[MODEL_NAME][PROMPT_STYLE], MODEL_NAME)
+generate_code_from_prompts(jsonl_input_file_path, output_base_dir, num_samples, TEMPERATURE, prompt_styles[MODEL_NAME][PROMPT_STYLE], MODEL_NAME, TEST_START, TEST_END)
