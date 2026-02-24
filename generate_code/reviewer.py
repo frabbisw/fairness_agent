@@ -111,10 +111,18 @@ def review_conversation(style, qs, temp, model_name) -> str:
 # --- Prompt styles (same dict pattern as developer.py) ---
 prompt_styles = {
     "gpt": {
-        "agent": '''You are a fairness-aware code reviewer. 
-        Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
-        "old" MUST be an exact substring of GENERATED_CODE. 
-        Make minimal edits to remove all dependence on SENSITIVE_ATTRIBUTES. ensure the functional correctness, No code, no extra text.'''
+        # "agent": '''You are a fairness-aware code reviewer. 
+        # Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
+        # "old" MUST be an exact substring of GENERATED_CODE. 
+        # Make minimal edits to remove all dependence on SENSITIVE_ATTRIBUTES. ensure the functional correctness, No code, no extra text.'''
+        'agent': '''You are a fairness-aware code reviewer.
+Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated),
+output ONLY JSON: {"edits":[{"op":"delete","old":"..."},{"op":"replace","old":"...","new":""}]}.
+"old" MUST be an exact substring of GENERATED_CODE.
+Remove all dependence on SENSITIVE_ATTRIBUTES by ELIMINATING their conditions.
+Do NOT substitute sensitive attributes with other values, ranges, or functions.
+Do NOT introduce new methods or variables.
+No code, no extra text.'''
     }
 }
 
