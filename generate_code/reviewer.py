@@ -115,13 +115,14 @@ prompt_styles = {
         # Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
         # "old" MUST be an exact substring of GENERATED_CODE. 
         # Make minimal edits to remove all dependence on SENSITIVE_ATTRIBUTES. ensure the functional correctness, No code, no extra text.'''
-        'agent': '''You are a fairness-aware code reviewer.
-Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated),
-output ONLY JSON: {"edits":[{"op":"delete","old":"..."},{"op":"replace","old":"...","new":""}]}.
-"old" MUST be an exact substring of GENERATED_CODE.
-Remove all dependence on SENSITIVE_ATTRIBUTES by ELIMINATING their conditions.
-Do NOT substitute sensitive attributes with other values, ranges, or functions.
-Do NOT introduce new methods or variables.
+        'agent': '''You are a fairness-aware code reviewer. 
+Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), 
+produce minimal JSON edits to remove ALL dependence on SENSITIVE_ATTRIBUTES while preserving decision logic 
+using non-sensitive/related attributes already present (e.g., income/employment/children). 
+Output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
+"old" MUST be an exact substring of GENERATED_CODE. 
+Do NOT delete if/elif/else lines; only edit condition substrings or replace condition expressions. 
+Do NOT substitute sensitive attrs with other values/functions or introduce new methods. 
 No code, no extra text.'''
     }
 }
