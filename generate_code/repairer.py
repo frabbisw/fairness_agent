@@ -132,6 +132,8 @@ def generate_repaired_code(
     temperature: float,
     style: str,
     model_name: str,
+    test_start: int,
+    test_end: int
 ):
     """
     For each task in prompts_file_path:
@@ -141,7 +143,10 @@ def generate_repaired_code(
 
     Each line corresponds to an iteration index.
     """
-    for json_obj in read_jsonl_file(prompts_file_path):
+    # for json_obj in read_jsonl_file(prompts_file_path):
+    for index, json_obj in enumerate(islice(read_jsonl_file(prompts_file_path), test_start, test_end), start=test_start):
+        print(f"Processing line {index}")
+        print("-"*50)
         task_id = str(json_obj.get("task_id", "default"))
         prompt = json_obj.get("prompt", "")
 
@@ -179,16 +184,6 @@ def generate_repaired_code(
                     out_f.write("\n")
                     continue
 
-                # Build repair request: prompt + current method + reviewer instruction
-                # qs = (
-                #     "PROMPT (context + stub):\n"
-                #     f"{prompt}\n\n"
-                #     "CURRENT_METHOD:\n"
-                #     f"{current_method}\n\n"
-                #     "REVIEW_INSTRUCTION:\n"
-                #     f"{review_text}\n\n"
-                #     "Return ONLY the repaired method code (signature + body)."
-                # )
                 qs = (
                     "CURRENT_METHOD:\n"
                     f"{current_method}\n\n"
@@ -209,6 +204,9 @@ if __name__ == "__main__":
 
     python repair.py <prompts_jsonl> <src_gc_dir> <src_review_dir> <target_repair_dir> <num_samples> <temperature> <prompt_style> <model_name>
     """
+    print("starting repairer agent")
+    print("=" * 50)
+
     prompts_jsonl_path = sys.argv[1]
     src_gc_base_dir = sys.argv[2]
     src_review_base_dir = sys.argv[3]
@@ -217,6 +215,9 @@ if __name__ == "__main__":
     TEMPERATURE = float(sys.argv[6])
     PROMPT_STYLE = sys.argv[7]
     MODEL_NAME = sys.argv[8]
+    TEST_START = sys.argv[9]
+    TEST_END = sys.argv[10]
+    
 
     print("prompts_jsonl_path", prompts_jsonl_path)
     print("src_gc_base_dir", src_gc_base_dir)
@@ -226,6 +227,8 @@ if __name__ == "__main__":
     print("TEMPERATURE", TEMPERATURE)
     print("PROMPT_STYLE", PROMPT_STYLE)
     print("MODEL_NAME", MODEL_NAME)
+    print("TEST_START", TEST_START)
+    print("TEST_END", TEST_END)
 
     os.makedirs(target_repair_base_dir, exist_ok=True)
 
@@ -238,4 +241,6 @@ if __name__ == "__main__":
         temperature=TEMPERATURE,
         style=prompt_styles[MODEL_NAME][PROMPT_STYLE],
         model_name=MODEL_NAME,
+        test_start=int(TEST_START),
+        test_end=int(TEST_END)
     )
