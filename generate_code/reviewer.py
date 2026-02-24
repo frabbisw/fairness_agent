@@ -128,6 +128,8 @@ def generate_reviews_from_bias_info(
     temperature: float,
     style: str,
     model_name: str,
+    test_start: int,
+    test_end: int
 ):
     """
     For each task in prompts_file_path:
@@ -137,7 +139,9 @@ def generate_reviews_from_bias_info(
 
     Each line corresponds to an iteration index.
     """
-    for json_obj in read_jsonl_file(prompts_file_path):
+    for index, json_obj in enumerate(islice(read_jsonl_file(input_file_path), test_start, test_end), start=test_start):
+        print(f"Processing line {index}")
+        print("-"*50)
         task_id = str(json_obj.get("task_id", "default"))
         prompt = json_obj.get("prompt", "")
 
@@ -203,6 +207,8 @@ if __name__ == "__main__":
     - num_samples: iterations (same as developer)
     - bias_info_base_path: directory or file path for bias info
     """
+    print("starting reviewer agent ...")
+    print("=" * 50)
     prompts_jsonl_path = sys.argv[1]
     src_gc_base_dir = sys.argv[2]
     target_review_base_dir = sys.argv[3]
@@ -213,6 +219,9 @@ if __name__ == "__main__":
     MODEL_NAME = sys.argv[7]
     BIAS_INFO_BASE_PATH = sys.argv[8]
 
+    TEST_START = sys.argv[9]
+    TEST_END = sys.argv[10]
+
     print("prompts_jsonl_path", prompts_jsonl_path)
     print("src_gc_base_dir", src_gc_base_dir)
     print("target_review_base_dir", target_review_base_dir)
@@ -221,6 +230,9 @@ if __name__ == "__main__":
     print("PROMPT_STYLE", PROMPT_STYLE)
     print("MODEL_NAME", MODEL_NAME)
     print("BIAS_INFO_BASE_PATH", BIAS_INFO_BASE_PATH)
+    print("TEST_START", TEST_START)
+    print("TEST_END", TEST_END)
+    
 
     os.makedirs(src_gc_base_dir, exist_ok=True)
 
@@ -233,4 +245,6 @@ if __name__ == "__main__":
         temperature=TEMPERATURE,
         style=prompt_styles[MODEL_NAME][PROMPT_STYLE],
         model_name=MODEL_NAME,
+        test_start=int(TEST_START),
+        test_end=int(TEST_END)
     )
