@@ -2,7 +2,7 @@ import json
 import os
 import sys
 import time
-
+from itertools import islice
 from openai import OpenAI
 from dotenv import load_dotenv
 
