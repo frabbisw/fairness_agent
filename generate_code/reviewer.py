@@ -114,7 +114,7 @@ prompt_styles = {
         "agent": '''You are a fairness-aware code reviewer. 
         Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
         "old" MUST be an exact substring of GENERATED_CODE. 
-        Make minimal edits to remove all dependence on SENSITIVE_ATTRIBUTES. No code, no extra text.'''
+        Make minimal edits to remove all dependence on SENSITIVE_ATTRIBUTES. ensure the functional correctness, No code, no extra text.'''
     }
 }
 
