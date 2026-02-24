@@ -139,7 +139,7 @@ def generate_reviews_from_bias_info(
 
     Each line corresponds to an iteration index.
     """
-    for index, json_obj in enumerate(islice(read_jsonl_file(input_file_path), test_start, test_end), start=test_start):
+    for index, json_obj in enumerate(islice(read_jsonl_file(prompts_file_path), test_start, test_end), start=test_start):
         print(f"Processing line {index}")
         print("-"*50)
         task_id = str(json_obj.get("task_id", "default"))
