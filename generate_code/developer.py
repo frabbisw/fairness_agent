@@ -166,12 +166,17 @@ TEST_START = sys.argv[7]
 
 TEST_END = sys.argv[8]
 
+print("starting developer agent")
+print("=" * 50)
+
 print("jsonl_input_file_path", jsonl_input_file_path)
 print("output_base_dir", output_base_dir)
 print("num_samples", num_samples)
 print("TEMPERATURE", TEMPERATURE)
 print("PROMPT_STYLE", PROMPT_STYLE)
 print("MODEL_NAME", MODEL_NAME)
+print("TEST_START", TEST_START)
+print("TEST_END", TEST_END)
 
 os.makedirs(output_base_dir, exist_ok=True)
 generate_code_from_prompts(jsonl_input_file_path, output_base_dir, num_samples, TEMPERATURE, prompt_styles[MODEL_NAME][PROMPT_STYLE], MODEL_NAME, TEST_START, TEST_END)
