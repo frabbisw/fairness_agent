@@ -11,7 +11,8 @@ PROMPT_STYLE=$3
 DATA_PATH=$4
 MODEL_DIR=$5
 MODEL_NAME=$6
-TEST_COUNT=$7
+TEST_START=$7
+TEST_COUNT=$8
 
 echo "SAMPLING:" "$SAMPLING"
 echo "TEMPERATURE:" "$TEMPERATURE"
@@ -19,6 +20,7 @@ echo "PROMPT_STYLE:" "$PROMPT_STYLE"
 echo "DATA_PATH:" "$DATA_PATH"
 echo "MODEL_DIR:" "$MODEL_DIR"
 echo "MODEL_NAME:" "$MODEL_NAME"
+echo "TEST_START:" "$TEST_START"
 echo "TEST_COUNT:" "$TEST_COUNT"
 echo "-------------------"
 
@@ -56,13 +58,13 @@ cd .. || exit
 echo "developer parse_bias_info"
 python parse_bias_info.py "$MODEL_DIR""/test_result/developer/log_files" "$MODEL_DIR""/test_result/developer/bias_info_files" "$SAMPLING"
 echo "developer summary result"
-python summary_result.py "$MODEL_DIR" $TEST_COUNT developer
+python summary_result.py "$MODEL_DIR" $TEST_START $TEST_COUNT developer
 echo "developer count bias"
-python count_bias.py "$MODEL_DIR" $TEST_COUNT developer
+python count_bias.py "$MODEL_DIR" $TEST_START $TEST_COUNT developer
 echo "developer count related"
-python count_related.py "$MODEL_DIR" $TEST_COUNT developer
+python count_related.py "$MODEL_DIR" $TEST_START $TEST_COUNT developer
 echo "developer count bias leaning"
-python count_bias_leaning.py "$MODEL_DIR" $TEST_COUNT developer
+python count_bias_leaning.py "$MODEL_DIR" $TEST_START $TEST_COUNT developer
 
 #reviewer agent
 cd "$CURRENT_DIR""/../generate_code" || exit
@@ -94,10 +96,10 @@ cd .. || exit
 echo "repairer parse_bias_info"
 python parse_bias_info.py "$MODEL_DIR""/test_result/repairer/log_files" "$MODEL_DIR""/test_result/repairer/bias_info_files" "$SAMPLING"
 echo "repairer summary result"
-python summary_result.py "$MODEL_DIR" $TEST_COUNT repairer
+python summary_result.py "$MODEL_DIR" $TEST_START $TEST_COUNT repairer
 echo "repairer count bias"
-python count_bias.py "$MODEL_DIR" $TEST_COUNT repairer
+python count_bias.py "$MODEL_DIR" $TEST_START $TEST_COUNT repairer
 echo "repairer count related"
-python count_related.py "$MODEL_DIR" $TEST_COUNT repairer
+python count_related.py "$MODEL_DIR" $TEST_START $TEST_COUNT repairer
 echo "repairer count bias leaning"
-python count_bias_leaning.py "$MODEL_DIR" $TEST_COUNT repairer
+python count_bias_leaning.py "$MODEL_DIR" $TEST_START $TEST_COUNT repairer
