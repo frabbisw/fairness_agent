@@ -115,18 +115,13 @@ prompt_styles = {
         # Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
         # "old" MUST be an exact substring of GENERATED_CODE. 
         # Make minimal edits to remove all dependence on SENSITIVE_ATTRIBUTES. ensure the functional correctness, No code, no extra text.'''
-        'agent': '''You are a fairness-aware code reviewer. 
-Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), 
-produce minimal JSON edits to remove ALL dependence on SENSITIVE_ATTRIBUTES while preserving decision logic 
-using non-sensitive/related attributes already present (e.g., income/employment/children). 
-Output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
-"old" MUST be an exact substring of GENERATED_CODE. 
-Do NOT delete if/elif/else lines; only edit condition substrings or replace condition expressions. 
-Do NOT substitute sensitive attrs with other values/functions or introduce new methods. 
+        'agent': '''You are a fairness-aware code reviewer.
+Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON edits {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. "old" MUST be an exact substring of GENERATED_CODE.
+Goal: remove all dependence on SENSITIVE_ATTRIBUTES by deleting their boolean predicates (and adjacent and/or) while keeping other logic unchanged.
+Do NOT change numeric thresholds/sets, do NOT add new predicates/attributes/functions, and do NOT delete control-structure lines (if/elif/else/return); only edit condition substrings.
 No code, no extra text.'''
     }
 }
-
 
 def generate_reviews_from_bias_info(
     prompts_file_path: str,
