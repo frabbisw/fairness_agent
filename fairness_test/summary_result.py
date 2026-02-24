@@ -102,12 +102,13 @@ def write_summaries_to_csv(summaries, output_file_path):
                 })
 
 model_dir = sys.argv[1]
-test_count = int(sys.argv[2])
-agent = sys.argv[3]
+test_start = int(sys.argv[2])
+test_count = int(sys.argv[3])
+agent = sys.argv[4]
 
 base_dir = os.path.abspath(f"{model_dir}/test_result/{agent}")
 
-for number in range(test_count):
+for number in range(test_start, test_count):
     # Dynamically construct the module name for the current test suite
     module_name = f'test_suites.test_suite_{number}'
 
