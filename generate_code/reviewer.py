@@ -4,7 +4,7 @@ import os
 import re
 import sys
 import time
-
+from itertools import islice
 from openai import OpenAI
 from dotenv import load_dotenv
 from google.cloud import datastore
