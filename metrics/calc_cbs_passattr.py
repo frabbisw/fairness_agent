@@ -145,3 +145,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# python metrics/calc_cbs_passattr.py  --related ../outputs/agentic/gpt1default/test_result/developer/aggregated_related_ratios_after.json  --bias ../outputs/agentic/gpt1default/test_result/repairer/aggregated_bias_ratios_after.json  --out  ../outputs/agentic/gpt1default/metrics/cbs_passattr.json
