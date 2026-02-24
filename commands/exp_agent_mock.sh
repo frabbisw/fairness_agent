@@ -49,7 +49,7 @@ sed -i "s|##PATH##TO##LOG##FILES##|$LOG_DIR|g" config.py
 sed -i "s|##PATH##TO##INCONSISTENCY##FILES##|$REPORT_BASE_DIR|g" config.py
 
 # pytest test_suite_0.py test_suite_1.py test_suite_2.py
-##PYTEST
+pytest
 
 #parse bias summary from log files
 cd .. || exit
@@ -87,7 +87,7 @@ sed -i "s|##PATH##TO##LOG##FILES##|$LOG_DIR|g" config.py
 sed -i "s|##PATH##TO##INCONSISTENCY##FILES##|$REPORT_BASE_DIR|g" config.py
 
 # pytest test_suite_0.py test_suite_1.py test_suite_2.py
-##PYTEST
+pytest
 
 #parse bias summary from log files
 cd .. || exit
