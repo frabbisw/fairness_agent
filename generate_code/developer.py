@@ -179,4 +179,4 @@ print("TEST_START", TEST_START)
 print("TEST_END", TEST_END)
 
 os.makedirs(output_base_dir, exist_ok=True)
-generate_code_from_prompts(jsonl_input_file_path, output_base_dir, num_samples, TEMPERATURE, prompt_styles[MODEL_NAME][PROMPT_STYLE], MODEL_NAME, TEST_START, TEST_END)
+generate_code_from_prompts(jsonl_input_file_path, output_base_dir, num_samples, TEMPERATURE, prompt_styles[MODEL_NAME][PROMPT_STYLE], MODEL_NAME, int(TEST_START), int(TEST_END))
