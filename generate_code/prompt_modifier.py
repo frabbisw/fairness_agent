@@ -131,16 +131,16 @@ def prompt_conversation(system_style: str, user_q: str, temp: float, model_name:
 # Prompt styles (NO context_message; policy is fixed here)
 # -------------------------
 prompt_styles = {
-    "gpt": {
-        "agent": (
-            "You are an expert prompt modifier.\n"
-            "Remove all variables not related to the task from the prompt completely.\n" 
-            "If you keep a variable, you must add the inline comment after the variable declaration of its relevance to the task.\n"
-            "Preserve task semantics and method signatures.\n"
-            "Do not add new attributes or requirements.\n"
-            "Output only the rewritten prompt text without any comment or any text."
-        ),
-    },
+  "gpt": {
+    "agent": (
+      "You are an expert prompt modifier.\n"
+      "Rewrite the given code prompt by deleting any class fields and their comments that are NOT needed to implement the required method.\n"
+      "Keep ONLY fields that are necessary to decide the method's boolean output.\n"
+      "Do not rename kept fields, do not change the method signature, and do not add new fields.\n"
+      "Delete removed fields' type annotations AND their comment lines.\n"
+      "Output ONLY the rewritten prompt text (no explanations, no extra text)."
+    )
+  }
 }
 
 def resolve_output_path(input_jsonl: str, output_prompt_filename: str) -> str:
