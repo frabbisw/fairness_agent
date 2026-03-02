@@ -130,45 +130,45 @@ run_generator prompt_modifier.py \
   --test_start="$TEST_START" \
   --test_end="$TEST_COUNT"
 
-# 1) Developer: generate (use modified prompts)
-run_generator developer.py \
-  --jsonl_input_file_path="$MODIFIED_DATA_PATH" \
-  --output_base_dir="$MODEL_DIR/response/developer" \
-  --num_samples="$SAMPLING" \
-  --temperature="$TEMPERATURE" \
-  --prompt_style="$PROMPT_STYLE" \
-  --model_name="$MODEL_NAME" \
-  --test_start="$TEST_START" \
-  --test_end="$TEST_COUNT"
+# # 1) Developer: generate (use modified prompts)
+# run_generator developer.py \
+#   --jsonl_input_file_path="$MODIFIED_DATA_PATH" \
+#   --output_base_dir="$MODEL_DIR/response/developer" \
+#   --num_samples="$SAMPLING" \
+#   --temperature="$TEMPERATURE" \
+#   --prompt_style="$PROMPT_STYLE" \
+#   --model_name="$MODEL_NAME" \
+#   --test_start="$TEST_START" \
+#   --test_end="$TEST_COUNT"
 
-# 2) Developer: test + parse + summarize
-run_test_phase "developer" "$MODEL_DIR/response/developer"
+# # 2) Developer: test + parse + summarize
+# run_test_phase "developer" "$MODEL_DIR/response/developer"
 
-# 3) Reviewer: generate (use modified prompts for consistency)
-run_generator reviewer.py \
-  --prompts_jsonl_path="$MODIFIED_DATA_PATH" \
-  --src_gc_base_dir="$MODEL_DIR/response/developer" \
-  --target_review_base_dir="$MODEL_DIR/response/reviewer" \
-  --num_samples="$SAMPLING" \
-  --temperature="$TEMPERATURE" \
-  --prompt_style="$PROMPT_STYLE" \
-  --model_name="$MODEL_NAME" \
-  --bias_info_base_path="$MODEL_DIR/test_result/developer/bias_info_files" \
-  --test_start="$TEST_START" \
-  --test_end="$TEST_COUNT"
+# # 3) Reviewer: generate (use modified prompts for consistency)
+# run_generator reviewer.py \
+#   --prompts_jsonl_path="$MODIFIED_DATA_PATH" \
+#   --src_gc_base_dir="$MODEL_DIR/response/developer" \
+#   --target_review_base_dir="$MODEL_DIR/response/reviewer" \
+#   --num_samples="$SAMPLING" \
+#   --temperature="$TEMPERATURE" \
+#   --prompt_style="$PROMPT_STYLE" \
+#   --model_name="$MODEL_NAME" \
+#   --bias_info_base_path="$MODEL_DIR/test_result/developer/bias_info_files" \
+#   --test_start="$TEST_START" \
+#   --test_end="$TEST_COUNT"
 
-# 4) Repairer: generate
-run_generator repairer.py \
-  --prompts_jsonl_path="$MODIFIED_DATA_PATH" \
-  --src_gc_base_dir="$MODEL_DIR/response/developer" \
-  --src_review_base_dir="$MODEL_DIR/response/reviewer" \
-  --target_repair_base_dir="$MODEL_DIR/response/repairer" \
-  --num_samples="$SAMPLING" \
-  --temperature="$TEMPERATURE" \
-  --prompt_style="$PROMPT_STYLE" \
-  --model_name="$MODEL_NAME" \
-  --test_start="$TEST_START" \
-  --test_end="$TEST_COUNT"
+# # 4) Repairer: generate
+# run_generator repairer.py \
+#   --prompts_jsonl_path="$MODIFIED_DATA_PATH" \
+#   --src_gc_base_dir="$MODEL_DIR/response/developer" \
+#   --src_review_base_dir="$MODEL_DIR/response/reviewer" \
+#   --target_repair_base_dir="$MODEL_DIR/response/repairer" \
+#   --num_samples="$SAMPLING" \
+#   --temperature="$TEMPERATURE" \
+#   --prompt_style="$PROMPT_STYLE" \
+#   --model_name="$MODEL_NAME" \
+#   --test_start="$TEST_START" \
+#   --test_end="$TEST_COUNT"
 
-# 5) Repairer: test + parse + summarize
-run_test_phase "repairer" "$MODEL_DIR/response/repairer"
+# # 5) Repairer: test + parse + summarize
+# run_test_phase "repairer" "$MODEL_DIR/response/repairer"
