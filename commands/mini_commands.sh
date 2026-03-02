@@ -2,4 +2,4 @@
 ##bash gen_and_exp.sh samples temp data_path out_folder model_name start N(343?)
 
 
-bash agents_commands_bash.sh 5 1 agent "$(pwd)""/../dataset/prompts.jsonl" "$(pwd)""/../outputs/agentic/""gpt""1""default" "gpt" 0 20
+bash agent_commands_bash.sh 5 1 agent "$(pwd)""/../dataset/prompts.jsonl" "$(pwd)""/../outputs/agentic/""gpt""1""default" "gpt" 0 20
