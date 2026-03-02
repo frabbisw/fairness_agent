@@ -17,10 +17,16 @@ MODEL_NAME="$6"
 TEST_START="${7:-0}"
 TEST_COUNT="${8:-0}"
 
+# output filename for prompt modifier (same dir as DATA_PATH)
+MODIFIED_PROMPTS_FILENAME="prompts_modified.jsonl"
+DATA_DIR="$(dirname "$(realpath "$DATA_PATH")")"
+MODIFIED_DATA_PATH="$DATA_DIR/$MODIFIED_PROMPTS_FILENAME"
+
 echo "SAMPLING: $SAMPLING"
 echo "TEMPERATURE: $TEMPERATURE"
 echo "PROMPT_STYLE: $PROMPT_STYLE"
 echo "DATA_PATH: $DATA_PATH"
+echo "MODIFIED_DATA_PATH: $MODIFIED_DATA_PATH"
 echo "MODEL_DIR: $MODEL_DIR"
 echo "MODEL_NAME: $MODEL_NAME"
 echo "TEST_START: $TEST_START"
@@ -32,7 +38,7 @@ echo "-------------------"
 # -------------------------
 
 run_generator() {
-  # $1 = script (developer.py / reviewer.py / repairer.py)
+  # $1 = script (prompt_modifier.py / developer.py / reviewer.py / repairer.py)
   # remaining args are passed as-is
   local script="$1"; shift
   cd "$CURRENT_DIR/../generate_code" || exit 1
@@ -88,7 +94,6 @@ run_test_phase() {
   local agent="$1"
   local response_dir="$2"
 
-  # Delete previous results
   rm -rf "$MODEL_DIR/test_result/$agent"
 
   local log_dir="$MODEL_DIR/test_result/$agent/log_files"
@@ -102,16 +107,32 @@ run_test_phase() {
 # Pipeline
 # -------------------------
 
-echo "developer.py $DATA_PATH $MODEL_DIR/response/developer $SAMPLING $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
+echo "prompt_modifier.py $DATA_PATH -> $MODIFIED_DATA_PATH"
+echo "developer.py $MODIFIED_DATA_PATH $MODEL_DIR/response/developer $SAMPLING $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
 echo "parse_bias_info.py $MODEL_DIR/test_result/developer/log_files $MODEL_DIR/test_result/developer/bias_info_files $SAMPLING"
 echo "summary_result.py $MODEL_DIR"
 echo "count_bias.py $MODEL_DIR"
 echo "count_bias_leaning.py $MODEL_DIR"
 echo "===================="
 
-# 1) Developer: generate
-run_generator developer.py \
+# 0) Prompt modifier: rewrite prompts and save alongside input prompts
+# NOTE: prompt_modifier.py expects positional args in the version I gave earlier.
+# Provide CONTEXT_MESSAGE via env var (recommended) to avoid quoting issues:
+#   export CONTEXT_MESSAGE="...."
+
+run_generator prompt_modifier.py \
   --jsonl_input_file_path="$DATA_PATH" \
+  --output_prompt_filename="prompts_modified.jsonl" \
+  --num_samples=1 \
+  --temperature="$TEMPERATURE" \
+  --prompt_style="$PROMPT_STYLE" \
+  --model_name="$MODEL_NAME" \
+  --test_start="$TEST_START" \
+  --test_end="$TEST_COUNT"
+
+# 1) Developer: generate (use modified prompts)
+run_generator developer.py \
+  --jsonl_input_file_path="$MODIFIED_DATA_PATH" \
   --output_base_dir="$MODEL_DIR/response/developer" \
   --num_samples="$SAMPLING" \
   --temperature="$TEMPERATURE" \
@@ -123,9 +144,9 @@ run_generator developer.py \
 # 2) Developer: test + parse + summarize
 run_test_phase "developer" "$MODEL_DIR/response/developer"
 
-# 3) Reviewer: generate
+# 3) Reviewer: generate (use modified prompts for consistency)
 run_generator reviewer.py \
-  --prompts_jsonl_path="$DATA_PATH" \
+  --prompts_jsonl_path="$MODIFIED_DATA_PATH" \
   --src_gc_base_dir="$MODEL_DIR/response/developer" \
   --target_review_base_dir="$MODEL_DIR/response/reviewer" \
   --num_samples="$SAMPLING" \
@@ -138,7 +159,7 @@ run_generator reviewer.py \
 
 # 4) Repairer: generate
 run_generator repairer.py \
-  --prompts_jsonl_path="$DATA_PATH" \
+  --prompts_jsonl_path="$MODIFIED_DATA_PATH" \
   --src_gc_base_dir="$MODEL_DIR/response/developer" \
   --src_review_base_dir="$MODEL_DIR/response/reviewer" \
   --target_repair_base_dir="$MODEL_DIR/response/repairer" \
