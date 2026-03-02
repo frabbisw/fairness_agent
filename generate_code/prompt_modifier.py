@@ -50,10 +50,10 @@ def clean_model_prompt_output(text: str) -> str:
     Model should output ONLY the rewritten prompt string (no JSON).
     This function strips common wrappers/fences safely.
     """
-    print("before clean...\n")
-    print("*"*50)
-    print(text)
-    print("*"*50)
+    # print("before clean...\n")
+    # print("*"*50)
+    # print(text)
+    # print("*"*50)
     if text is None:
         return ""
     t = text.strip()
