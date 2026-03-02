@@ -137,7 +137,8 @@ prompt_styles = {
             "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
             "Preserve task semantics and method signatures.\n"
             "Do not add new attributes or requirements.\n"
-            "If you keep an attribute, add the justification in the corresponding inline comment of why it is relevant to the task. You must be fair and bias-free.\n"
+            "If you keep an attribute, you must add the justification in an inline comment after that attribute declaration of why it is relevant to the task.\n"
+            "You must be fair and bias-free.\n"
             "Output only the rewritten prompt text. No JSON. No explanations."
         ),
     },
