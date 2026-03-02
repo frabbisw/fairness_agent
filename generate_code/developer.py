@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import sys
@@ -141,42 +142,54 @@ def generate_code_from_prompts(input_file_path, output_dir, iterations, temperat
                     print(generated_code)
                     print("-"*100)
 
-
-# Path to your JSONL file
-jsonl_input_file_path = sys.argv[1]
-
-# Base directory for output files
-output_base_dir = sys.argv[2]
-
-# Number of times to generate code
-num_samples = int(sys.argv[3])
-# num_samples = sys.argv[3]
-
-# Temperature for model
-TEMPERATURE = 1.0 if len(sys.argv) < 5 else float(sys.argv[4])
-# TEMPERATURE = sys.argv[4]
-
-# Prompt Style out of "default", "chain_of_thoughts", "positive_chain_of_thoughts", "partial"
-PROMPT_STYLE = "default" if len(sys.argv) < 6 else sys.argv[5]
-# PROMPT_STYLE = sys.argv[5]
-
-MODEL_NAME = sys.argv[6]
-
-TEST_START = sys.argv[7]
-
-TEST_END = sys.argv[8]
-
-print("starting developer agent")
-print("=" * 50)
-
-print("jsonl_input_file_path", jsonl_input_file_path)
-print("output_base_dir", output_base_dir)
-print("num_samples", num_samples)
-print("TEMPERATURE", TEMPERATURE)
-print("PROMPT_STYLE", PROMPT_STYLE)
-print("MODEL_NAME", MODEL_NAME)
-print("TEST_START", TEST_START)
-print("TEST_END", TEST_END)
-
-os.makedirs(output_base_dir, exist_ok=True)
-generate_code_from_prompts(jsonl_input_file_path, output_base_dir, num_samples, TEMPERATURE, prompt_styles[MODEL_NAME][PROMPT_STYLE], MODEL_NAME, int(TEST_START), int(TEST_END))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Developer agent")
+    parser.add_argument("--jsonl_input_file_path", required=True)
+    parser.add_argument("--output_base_dir", required=True)
+    parser.add_argument("--num_samples", type=int, required=True)
+    
+    # keep same defaults you currently implement via len(sys.argv)
+    parser.add_argument("--temperature", type=float, default=1.0)
+    parser.add_argument("--prompt_style", default="default")
+    
+    # required in your current code (sys.argv[6] always accessed)
+    parser.add_argument("--model_name", required=True)
+    
+    # these are required in your current code (sys.argv[7], sys.argv[8])
+    parser.add_argument("--test_start", type=int, required=True)
+    parser.add_argument("--test_end", type=int, required=True)
+    
+    args = parser.parse_args()
+    
+    jsonl_input_file_path = args.jsonl_input_file_path
+    output_base_dir = args.output_base_dir
+    num_samples = args.num_samples
+    TEMPERATURE = args.temperature
+    PROMPT_STYLE = args.prompt_style
+    MODEL_NAME = args.model_name
+    TEST_START = args.test_start
+    TEST_END = args.test_end
+    
+    print("starting developer agent")
+    print("=" * 50)
+    
+    print("jsonl_input_file_path", jsonl_input_file_path)
+    print("output_base_dir", output_base_dir)
+    print("num_samples", num_samples)
+    print("TEMPERATURE", TEMPERATURE)
+    print("PROMPT_STYLE", PROMPT_STYLE)
+    print("MODEL_NAME", MODEL_NAME)
+    print("TEST_START", TEST_START)
+    print("TEST_END", TEST_END)
+    
+    os.makedirs(output_base_dir, exist_ok=True)
+    generate_code_from_prompts(
+        jsonl_input_file_path,
+        output_base_dir,
+        num_samples,
+        TEMPERATURE,
+        prompt_styles[MODEL_NAME][PROMPT_STYLE],
+        MODEL_NAME,
+        int(TEST_START),
+        int(TEST_END),
+    )
