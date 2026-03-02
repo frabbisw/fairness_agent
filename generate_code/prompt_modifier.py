@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from vertexai.language_models import CodeChatModel
 import anthropic
+import re
 
 load_dotenv()
 
@@ -54,43 +55,23 @@ def clean_model_prompt_output(text: str) -> str:
     t = text.strip()
 
     # remove code fences if the model wraps output
-    if t.startswith("```"):
-        t = t.replace("```python", "").replace("```", "").strip()
-
+    if "```" in t:
+        t = t[t.find("```"):]
+        t = t.replace("```python", "")
+        t = t.replace("```content", "")
+        t = t.replace("```py", "")
+        t = t.replace("```Python", "")
+        
+    if "```" in t:
+        t = t[:t.find("```")]
+        t = t.replace("```", "")
+    
     # remove common labels
     for prefix in ["PROMPT:", "REWRITTEN PROMPT:", "REWRITTEN_PROMPT:", "OUTPUT:", "RESULT:"]:
         if t.lower().startswith(prefix.lower()):
             t = t[len(prefix):].strip()
 
     return t
-
-import re
-
-def process_response(response):
-    """
-    Extracts the content inside ```content``` or ```python``` code blocks
-    from a GPT response.
-    """
-
-    # Step 1: normalize response to plain text
-    if hasattr(response, "choices"):
-        # OpenAI-style response object
-        text = response.choices[0].message.content
-    else:
-        # already a string
-        text = str(response)
-
-    # Step 2: try to extract ```content``` block first
-    match = re.search(r"```content\s*(.*?)```", text, re.DOTALL)
-
-    # fallback: extract ```python``` block
-    if not match:
-        match = re.search(r"```python\s*(.*?)```", text, re.DOTALL)
-
-    if not match:
-        raise ValueError("No ```content``` or ```python``` block found in response")
-
-    return match.group(1).strip()
     
 
 # -------------------------
@@ -106,7 +87,7 @@ def prompt_conversation(system_style: str, user_q: str, temp: float, model_name:
                 {"role": "user", "content": user_q},
             ],
         )
-        return process_response((response.choices[0].message.content or "").strip())
+        return (response.choices[0].message.content or "").strip()
 
     if model_name == "llama":
         response = llama_client.chat.completions.create(
