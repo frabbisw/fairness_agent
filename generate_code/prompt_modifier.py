@@ -123,7 +123,7 @@ def prompt_conversation(system_style: str, user_q: str, temp: float, model_name:
 # -------------------------
 prompt_styles = {
     "gpt": {
-        "default": (
+        "agent": (
             "You are a prompt-modifier agent for fairness testing. "
             "Rewrite a given programming prompt to REMOVE any attributes that are not relevant "
             "to the task, to reduce future bias and improve fairness.\n"
