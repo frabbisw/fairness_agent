@@ -197,27 +197,53 @@ def generate_repaired_code(
 
         print(f"[OK] Wrote repaired code: {out_path}")
 
-
 if __name__ == "__main__":
-    """
-    Same CLI style as your reviewer.py (explicit args):
+    import argparse
 
-    python repair.py <prompts_jsonl> <src_gc_dir> <src_review_dir> <target_repair_dir> <num_samples> <temperature> <prompt_style> <model_name>
     """
+    New CLI style:
+
+    python repair.py \
+      --prompts_jsonl_path=... \
+      --src_gc_base_dir=... \
+      --src_review_base_dir=... \
+      --target_repair_base_dir=... \
+      --num_samples=... \
+      --temperature=... \
+      --prompt_style=... \
+      --model_name=... \
+      --test_start=... \
+      --test_end=...
+    """
+
     print("starting repairer agent")
     print("=" * 50)
 
-    prompts_jsonl_path = sys.argv[1]
-    src_gc_base_dir = sys.argv[2]
-    src_review_base_dir = sys.argv[3]
-    target_repair_base_dir = sys.argv[4]
-    num_samples = int(sys.argv[5])
-    TEMPERATURE = float(sys.argv[6])
-    PROMPT_STYLE = sys.argv[7]
-    MODEL_NAME = sys.argv[8]
-    TEST_START = sys.argv[9]
-    TEST_END = sys.argv[10]
-    
+    parser = argparse.ArgumentParser(description="Repairer agent")
+
+    parser.add_argument("--prompts_jsonl_path", required=True)
+    parser.add_argument("--src_gc_base_dir", required=True)
+    parser.add_argument("--src_review_base_dir", required=True)
+    parser.add_argument("--target_repair_base_dir", required=True)
+    parser.add_argument("--num_samples", type=int, required=True)
+    parser.add_argument("--temperature", type=float, required=True)
+    parser.add_argument("--prompt_style", required=True)
+    parser.add_argument("--model_name", required=True)
+    parser.add_argument("--test_start", type=int, required=True)
+    parser.add_argument("--test_end", type=int, required=True)
+
+    args = parser.parse_args()
+
+    prompts_jsonl_path = args.prompts_jsonl_path
+    src_gc_base_dir = args.src_gc_base_dir
+    src_review_base_dir = args.src_review_base_dir
+    target_repair_base_dir = args.target_repair_base_dir
+    num_samples = args.num_samples
+    TEMPERATURE = args.temperature
+    PROMPT_STYLE = args.prompt_style
+    MODEL_NAME = args.model_name
+    TEST_START = args.test_start
+    TEST_END = args.test_end
 
     print("prompts_jsonl_path", prompts_jsonl_path)
     print("src_gc_base_dir", src_gc_base_dir)
@@ -241,6 +267,6 @@ if __name__ == "__main__":
         temperature=TEMPERATURE,
         style=prompt_styles[MODEL_NAME][PROMPT_STYLE],
         model_name=MODEL_NAME,
-        test_start=int(TEST_START),
-        test_end=int(TEST_END)
+        test_start=TEST_START,
+        test_end=TEST_END,
     )
