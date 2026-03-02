@@ -133,13 +133,11 @@ def prompt_conversation(system_style: str, user_q: str, temp: float, model_name:
 prompt_styles = {
     "gpt": {
         "agent": (
-            "You are a prompt-modifier for fairness testing.\n"
-            "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
+            "You are an expert bias-aware prompt-modifier to generate bias-free code.\n"
+            "Remove all attributes irrelevant to the task (think about each attribute one by one and justify keeping that attribute). \n"
             "Preserve task semantics and method signatures.\n"
             "Do not add new attributes or requirements.\n"
-            "If you keep an attribute, you must add the justification in an inline comment after that attribute declaration of why it is relevant to the task.\n"
-            "You must be fair and bias-free.\n"
-            "Output only the rewritten prompt text. No JSON. No explanations."
+            "Output only the rewritten prompt text without any comment or any text."
         ),
     },
 }
