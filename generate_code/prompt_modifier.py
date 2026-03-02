@@ -50,6 +50,10 @@ def clean_model_prompt_output(text: str) -> str:
     Model should output ONLY the rewritten prompt string (no JSON).
     This function strips common wrappers/fences safely.
     """
+    print("before clean...\n")
+    print("*"*50)
+    print(text)
+    print("*"*50)
     if text is None:
         return ""
     t = text.strip()
@@ -65,12 +69,13 @@ def clean_model_prompt_output(text: str) -> str:
     if "```" in t:
         t = t[:t.find("```")]
         t = t.replace("```", "")
-    
-    # remove common labels
-    for prefix in ["PROMPT:", "REWRITTEN PROMPT:", "REWRITTEN_PROMPT:", "OUTPUT:", "RESULT:"]:
-        if t.lower().startswith(prefix.lower()):
-            t = t[len(prefix):].strip()
 
+    print("after clean...\n")
+    print("="*50)
+    print(t)
+    print("="*50)
+
+    
     return t
     
 
@@ -132,68 +137,11 @@ prompt_styles = {
             "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
             "Preserve task semantics and method signatures.\n"
             "Do not add new attributes or requirements.\n"
-            "You can only keep an attribute when you have the justification of why it is relevant to the task. You must be fair and bias-free.\n"
-            "Output only the rewritten prompt text. No JSON. No explanations."
-        ),
-    },
-    "llama": {
-        "default": (
-            "You are a prompt-modifier for fairness testing.\n"
-            "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
-            "Preserve task semantics and method signatures.\n"
-            "Do not add new attributes or requirements.\n"
-            "Output only the rewritten prompt text. No JSON. No explanations."
-        ),
-        "agent": (
-            "You are a prompt-modifier for fairness testing.\n"
-            "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
-            "Preserve task semantics and method signatures.\n"
-            "Do not add new attributes or requirements.\n"
-            "Output only the rewritten prompt text. No JSON. No explanations."
-        ),
-    },
-    "bison": {
-        "default": (
-            "You are a prompt-modifier for fairness testing.\n"
-            "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
-            "Preserve task semantics and method signatures.\n"
-            "Do not add new attributes or requirements.\n"
-            "Output only the rewritten prompt text. No JSON. No explanations."
-        ),
-        "agent": (
-            "You are a prompt-modifier for fairness testing.\n"
-            "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
-            "Preserve task semantics and method signatures.\n"
-            "Do not add new attributes or requirements.\n"
-            "Output only the rewritten prompt text. No JSON. No explanations."
-        ),
-    },
-    "claude": {
-        "default": (
-            "You are a prompt-modifier for fairness testing.\n"
-            "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
-            "Preserve task semantics and method signatures.\n"
-            "Do not add new attributes or requirements.\n"
-            "Output only the rewritten prompt text. No JSON. No explanations."
-        ),
-        "agent": (
-            "You are a prompt-modifier for fairness testing.\n"
-            "Remove all attributes irrelevant to the task (especially demographic/protected ones).\n"
-            "Preserve task semantics and method signatures.\n"
-            "Do not add new attributes or requirements.\n"
+            "If you keep an attribute, add the justification in the corresponding inline comment of why it is relevant to the task. You must be fair and bias-free.\n"
             "Output only the rewritten prompt text. No JSON. No explanations."
         ),
     },
 }
-
-
-def build_user_query(original_prompt: str) -> str:
-    return (
-        "ORIGINAL_PROMPT:\n"
-        f"{original_prompt}\n\n"
-        "Rewrite it following the system rules. Output ONLY the rewritten prompt text."
-    )
-
 
 def resolve_output_path(input_jsonl: str, output_prompt_filename: str) -> str:
     """
@@ -247,7 +195,7 @@ def modify_prompts(
                 )
                 continue
 
-            user_q = build_user_query(original_prompt)
+            user_q = original_prompt
             raw = prompt_conversation(system_style, user_q, temperature, model_name)
             rewritten_prompt = clean_model_prompt_output(raw)
 
