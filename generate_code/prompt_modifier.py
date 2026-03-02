@@ -134,7 +134,7 @@ prompt_styles = {
     "gpt": {
         "agent": (
             "You are an expert bias-aware prompt-modifier to generate bias-free code.\n"
-            "Remove all attributes irrelevant to the task (think about each attribute one by one and justify keeping that attribute). \n"
+            "Remove all variables not related to the task from the prompt completely. If you want to keep a variable, you must have an explanation of the relevance of that variable to the task.\n"
             "Preserve task semantics and method signatures.\n"
             "Do not add new attributes or requirements.\n"
             "Output only the rewritten prompt text without any comment or any text."
