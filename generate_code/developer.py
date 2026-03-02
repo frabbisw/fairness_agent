@@ -186,8 +186,8 @@ if __name__ == "__main__":
     generate_code_from_prompts(
         jsonl_input_file_path,
         output_base_dir,
-        num_samples,
-        TEMPERATURE,
+        int(num_samples),
+        float(TEMPERATURE),
         prompt_styles[MODEL_NAME][PROMPT_STYLE],
         MODEL_NAME,
         int(TEST_START),
