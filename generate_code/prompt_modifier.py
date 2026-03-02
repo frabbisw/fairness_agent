@@ -133,8 +133,9 @@ def prompt_conversation(system_style: str, user_q: str, temp: float, model_name:
 prompt_styles = {
     "gpt": {
         "agent": (
-            "You are an expert bias-aware prompt-modifier to generate bias-free code.\n"
-            "Remove all variables not related to the task from the prompt completely. If you want to keep a variable, you must have an explanation of the relevance of that variable to the task.\n"
+            "You are an expert prompt modifier.\n"
+            "Remove all variables not related to the task from the prompt completely.\n" 
+            "If you keep a variable, you must add the inline comment after the variable declaration of its relevance to the task.\n"
             "Preserve task semantics and method signatures.\n"
             "Do not add new attributes or requirements.\n"
             "Output only the rewritten prompt text without any comment or any text."
