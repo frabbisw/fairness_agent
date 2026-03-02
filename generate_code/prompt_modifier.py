@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from itertools import islice
+import argparse
 
 from dotenv import load_dotenv
 from openai import OpenAI
