@@ -124,19 +124,11 @@ def prompt_conversation(system_style: str, user_q: str, temp: float, model_name:
 prompt_styles = {
     "gpt": {
         "agent": (
-            "You are a prompt-modifier agent for fairness testing. "
-            "Rewrite a given programming prompt to REMOVE any attributes that are not relevant "
-            "to the task, to reduce future bias and improve fairness.\n"
-            "Rules:\n"
-            "1) Keep the task semantics and required method signature unchanged.\n"
-            "2) Remove irrelevant demographic/protected attributes and any mentions of them "
-            "(fields, comments, instructions, enumerations).\n"
-            "3) Do NOT introduce new attributes or new requirements.\n"
-            "4) Output ONLY the rewritten prompt text. No JSON. No explanations.\n"
-        ),
-        "agent": (
-            "Rewrite the prompt to remove irrelevant attributes for fairness. "
-            "Output ONLY the rewritten prompt text. No JSON. No explanations."
+            '''You are a prompt-modifier for fairness testing.
+Rewrite the prompt by removing all attributes irrelevant to the task (especially demographic/protected ones).
+Preserve task semantics and method signatures.
+Do not add new attributes or requirements.
+Output only the rewritten prompt text. No JSON. No explanations.'''
         ),
     },
     "llama": {
@@ -178,7 +170,7 @@ prompt_styles = {
 }
 
 
-def build_system_style(base_style: str, context_message: str) -> str:
+def build_system_style(base_style: str) -> str:
     if context_message:
         return base_style + "\n\nCONTEXT:\n" + context_message.strip()
     return base_style
@@ -199,14 +191,13 @@ def modify_prompts(
     temperature: float,
     style: str,
     model_name: str,
-    context_message: str,
     test_start: int,
     test_end: int,
 ):
     """
     Reads JSONL prompts with {"task_id":..., "prompt":...}
     Writes JSONL prompts with the SAME format, but prompt rewritten by the LLM.
-    iterations is accepted to match developer.py signature; we only generate 1 rewrite per task.
+    iterations is accepted to mirror other agents; we generate 1 rewrite per task.
     """
     os.makedirs(os.path.dirname(output_prompts_path), exist_ok=True)
 
@@ -222,10 +213,13 @@ def modify_prompts(
             original_prompt = json_obj.get("prompt", "")
 
             if not isinstance(original_prompt, str) or not original_prompt.strip():
-                write_jsonl_line(out_f, {"task_id": task_id, "prompt": original_prompt if isinstance(original_prompt, str) else ""})
+                write_jsonl_line(
+                    out_f,
+                    {"task_id": task_id, "prompt": original_prompt if isinstance(original_prompt, str) else ""},
+                )
                 continue
 
-            system_style = build_system_style(style, context_message)
+            system_style = style
             user_q = build_user_query(original_prompt)
 
             raw = prompt_conversation(system_style, user_q, temperature, model_name)
@@ -243,76 +237,66 @@ def modify_prompts(
     print(f"[DONE] Wrote modified prompts to: {output_prompts_path}")
 
 
+def build_arg_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="Prompt modifier agent (flag-based).")
+
+    p.add_argument(
+        "--jsonl_input_file_path",
+        required=True,
+        type=str,
+        help="Path to input JSONL prompts file (each line: {task_id, prompt}).",
+    )
+    p.add_argument(
+        "--output_prompt_filename",
+        required=True,
+        type=str,
+        help=(
+            "Output filename (e.g., prompts_modified.jsonl). "
+            "If a bare filename is provided, it is saved alongside the input file."
+        ),
+    )
+    p.add_argument("--num_samples", required=True, type=int, help="Kept for interface compatibility; rewrite once per task.")
+    p.add_argument("--temperature", required=True, type=float, help="Sampling temperature.")
+    p.add_argument("--prompt_style", required=True, type=str, help="Prompt style key (e.g., default/agent).")
+    p.add_argument("--model_name", required=True, type=str, choices=["gpt", "llama", "bison", "claude"], help="Which model client to use.")
+    p.add_argument("--test_start", required=True, type=int, help="Start index (inclusive) in the JSONL.")
+    p.add_argument("--test_end", required=True, type=int, help="End index (exclusive) in the JSONL.")
+    return p
+
+
 if __name__ == "__main__":
-    """
-    Positional args (kept compatible with the bash integration you showed):
-
-    python prompt_modifier.py \
-      <input_jsonl_path> \
-      <output_prompt_filename_or_abs_path> \
-      <num_samples> \
-      <temperature> \
-      <prompt_style> \
-      <model_name> \
-      <context_message> \
-      <test_start> \
-      <test_end>
-
-    Output path rule:
-    - If arg2 is absolute => write there
-    - If arg2 is just a filename => write in SAME directory as input_jsonl_path
-    """
     print("starting prompt_modifier agent")
     print("=" * 50)
 
-    if len(sys.argv) < 10:
-        print(
-            "Usage:\n"
-            "python prompt_modifier.py <input_jsonl> <output_filename> <num_samples> <temperature> "
-            "<prompt_style> <model_name> <context_message> <test_start> <test_end>"
-        )
-        sys.exit(1)
+    parser = build_arg_parser()
+    args = parser.parse_args()
 
-    input_jsonl = sys.argv[1]
-    output_name = sys.argv[2]
-    num_samples = int(sys.argv[3])
-    temperature = float(sys.argv[4])
-    prompt_style = sys.argv[5]
-    model_name = sys.argv[6]
-    context_message = sys.argv[7]
-    test_start = int(sys.argv[8])
-    test_end = int(sys.argv[9])
-
-    # output in same directory as input unless absolute path provided
-    if os.path.isabs(output_name):
-        output_path = output_name
-    else:
-        output_path = os.path.join(os.path.dirname(os.path.abspath(input_jsonl)), output_name)
+    input_jsonl = args.jsonl_input_file_path
+    output_path = resolve_output_path(input_jsonl, args.output_prompt_filename)
 
     print("input_jsonl:", input_jsonl)
     print("output_path:", output_path)
-    print("num_samples:", num_samples)
-    print("temperature:", temperature)
-    print("prompt_style:", prompt_style)
-    print("model_name:", model_name)
-    print("test_start:", test_start)
-    print("test_end:", test_end)
+    print("num_samples:", args.num_samples)
+    print("temperature:", args.temperature)
+    print("prompt_style:", args.prompt_style)
+    print("model_name:", args.model_name)
+    print("test_start:", args.test_start)
+    print("test_end:", args.test_end)
 
-    base_style = prompt_styles.get(model_name, {}).get(prompt_style)
+    base_style = prompt_styles.get(args.model_name, {}).get(args.prompt_style)
     if base_style is None:
         raise ValueError(
-            f"Unknown model_name/prompt_style combo: model_name={model_name}, prompt_style={prompt_style}. "
-            f"Available prompt styles: {list(prompt_styles.get(model_name, {}).keys())}"
+            f"Unknown prompt_style '{args.prompt_style}' for model_name '{args.model_name}'. "
+            f"Available: {list(prompt_styles.get(args.model_name, {}).keys())}"
         )
 
     modify_prompts(
         input_prompts_path=input_jsonl,
         output_prompts_path=output_path,
-        iterations=num_samples,
-        temperature=temperature,
+        iterations=args.num_samples,
+        temperature=args.temperature,
         style=base_style,
-        model_name=model_name,
-        context_message=context_message,
-        test_start=test_start,
-        test_end=test_end,
+        model_name=args.model_name,
+        test_start=args.test_start,
+        test_end=args.test_end,
     )
