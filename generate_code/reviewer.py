@@ -201,30 +201,52 @@ def generate_reviews_from_bias_info(
 
 
 if __name__ == "__main__":
-    """
-    Mirrors developer.py arg style, with ONE EXTRA arg at the end:
+    import argparse
 
-    python reviewer.py <prompts_jsonl> <src_gc_dir> <num_samples> [temperature] [prompt_style] <model_name> <bias_info_base_path>
-
-    - prompts_jsonl: same input you used for developer.py
-    - src_gc_dir: same output dir where task_<id>_generated_code.jsonl exists
-    - num_samples: iterations (same as developer)
-    - bias_info_base_path: directory or file path for bias info
     """
+    New CLI style:
+
+    python reviewer.py \
+      --prompts_jsonl_path=... \
+      --src_gc_base_dir=... \
+      --target_review_base_dir=... \
+      --num_samples=... \
+      --temperature=... \
+      --prompt_style=... \
+      --model_name=... \
+      --bias_info_base_path=... \
+      --test_start=... \
+      --test_end=...
+    """
+
     print("starting reviewer agent ...")
     print("=" * 50)
-    prompts_jsonl_path = sys.argv[1]
-    src_gc_base_dir = sys.argv[2]
-    target_review_base_dir = sys.argv[3]
-    num_samples = int(sys.argv[4])
 
-    TEMPERATURE = float(sys.argv[5])
-    PROMPT_STYLE = sys.argv[6]
-    MODEL_NAME = sys.argv[7]
-    BIAS_INFO_BASE_PATH = sys.argv[8]
+    parser = argparse.ArgumentParser(description="Reviewer agent")
 
-    TEST_START = sys.argv[9]
-    TEST_END = sys.argv[10]
+    parser.add_argument("--prompts_jsonl_path", required=True)
+    parser.add_argument("--src_gc_base_dir", required=True)
+    parser.add_argument("--target_review_base_dir", required=True)
+    parser.add_argument("--num_samples", type=int, required=True)
+    parser.add_argument("--temperature", type=float, required=True)
+    parser.add_argument("--prompt_style", required=True)
+    parser.add_argument("--model_name", required=True)
+    parser.add_argument("--bias_info_base_path", required=True)
+    parser.add_argument("--test_start", type=int, required=True)
+    parser.add_argument("--test_end", type=int, required=True)
+
+    args = parser.parse_args()
+
+    prompts_jsonl_path = args.prompts_jsonl_path
+    src_gc_base_dir = args.src_gc_base_dir
+    target_review_base_dir = args.target_review_base_dir
+    num_samples = args.num_samples
+    TEMPERATURE = args.temperature
+    PROMPT_STYLE = args.prompt_style
+    MODEL_NAME = args.model_name
+    BIAS_INFO_BASE_PATH = args.bias_info_base_path
+    TEST_START = args.test_start
+    TEST_END = args.test_end
 
     print("prompts_jsonl_path", prompts_jsonl_path)
     print("src_gc_base_dir", src_gc_base_dir)
@@ -236,7 +258,6 @@ if __name__ == "__main__":
     print("BIAS_INFO_BASE_PATH", BIAS_INFO_BASE_PATH)
     print("TEST_START", TEST_START)
     print("TEST_END", TEST_END)
-    
 
     os.makedirs(src_gc_base_dir, exist_ok=True)
 
@@ -245,10 +266,10 @@ if __name__ == "__main__":
         src_gc_dir=src_gc_base_dir,
         target_review_dir=target_review_base_dir,
         bias_info_base_path=BIAS_INFO_BASE_PATH,
-        iterations=num_samples,
-        temperature=TEMPERATURE,
+        iterations=int(num_samples),
+        temperature=float(TEMPERATURE),
         style=prompt_styles[MODEL_NAME][PROMPT_STYLE],
         model_name=MODEL_NAME,
         test_start=int(TEST_START),
-        test_end=int(TEST_END)
+        test_end=int(TEST_END),
     )
