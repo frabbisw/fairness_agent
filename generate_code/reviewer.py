@@ -199,6 +199,12 @@ def generate_reviews_from_bias_info(
                     out_f.write("\n")
                     continue
 
+                if bias_obj["bias_info"] == "none":
+                    bias_obj["bias_info"] = "<no bias attribute presents. skip>"
+                if related_obj["related_info"] == "none":
+                    related_obj["related_info"] = "<all related attributes present. skip>"
+
+                
                 # Build concise user query
                 qs = (
                     "PROMPT:\n"
