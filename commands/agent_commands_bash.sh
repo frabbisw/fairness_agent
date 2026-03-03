@@ -108,7 +108,6 @@ run_test_phase() {
 # -------------------------
 
 # echo "prompt_modifier.py $DATA_PATH -> $MODIFIED_DATA_PATH"
-# echo "developer.py $MODIFIED_DATA_PATH $MODEL_DIR/response/developer $SAMPLING $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
 echo "developer.py $DATA_PATH $MODEL_DIR/response/developer $SAMPLING $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
 echo "parse_bias_info.py $MODEL_DIR/test_result/developer/log_files $MODEL_DIR/test_result/developer/bias_info_files $SAMPLING"
 echo "summary_result.py $MODEL_DIR"
