@@ -70,10 +70,10 @@ def clean_model_prompt_output(text: str) -> str:
         t = t[:t.find("```")]
         t = t.replace("```", "")
 
-    print("after clean...\n")
-    print("="*50)
-    print(t)
-    print("="*50)
+    # print("after clean...\n")
+    # print("="*50)
+    # print(t)
+    # print("="*50)
 
     
     return t
