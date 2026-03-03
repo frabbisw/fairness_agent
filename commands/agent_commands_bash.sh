@@ -122,7 +122,7 @@ echo "===================="
 
 run_generator prompt_modifier.py \
   --jsonl_input_file_path="$DATA_PATH" \
-  --output_prompt_filename="prompts_modified.jsonl" \
+  --output_prompt_filename=$MODIFIED_PROMPTS_FILENAME \
   --num_samples=1 \
   --temperature="$TEMPERATURE" \
   --prompt_style="$PROMPT_STYLE" \
@@ -130,19 +130,19 @@ run_generator prompt_modifier.py \
   --test_start="$TEST_START" \
   --test_end="$TEST_COUNT"
   
-# # 1) Developer: generate (use modified prompts)
-# run_generator developer.py \
-#   --jsonl_input_file_path="$MODIFIED_DATA_PATH" \
-#   --output_base_dir="$MODEL_DIR/response/developer" \
-#   --num_samples="$SAMPLING" \
-#   --temperature="$TEMPERATURE" \
-#   --prompt_style="$PROMPT_STYLE" \
-#   --model_name="$MODEL_NAME" \
-#   --test_start="$TEST_START" \
-#   --test_end="$TEST_COUNT"
+# 1) Developer: generate (use modified prompts)
+run_generator developer.py \
+  --jsonl_input_file_path="$MODIFIED_DATA_PATH" \
+  --output_base_dir="$MODEL_DIR/response/developer" \
+  --num_samples="$SAMPLING" \
+  --temperature="$TEMPERATURE" \
+  --prompt_style="$PROMPT_STYLE" \
+  --model_name="$MODEL_NAME" \
+  --test_start="$TEST_START" \
+  --test_end="$TEST_COUNT"
 
-# # 2) Developer: test + parse + summarize
-# run_test_phase "developer" "$MODEL_DIR/response/developer"
+# 2) Developer: test + parse + summarize
+run_test_phase "developer" "$MODEL_DIR/response/developer"
 
 # # 3) Reviewer: generate (use modified prompts for consistency)
 # run_generator reviewer.py \
