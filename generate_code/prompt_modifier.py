@@ -78,6 +78,54 @@ def clean_model_prompt_output(text: str) -> str:
     
     return t
     
+def process_response(response: str):
+    """
+    Extract {"modified_prompt": "...", "reasons": {...}}
+    from possibly messy model output.
+
+    Returns:
+        prompt (str)
+        reasons (dict)
+    """
+
+    if not response:
+        return "", {}
+
+    text = response.strip()
+    print(text)
+    print("-"*50)
+
+    # Remove markdown fences but keep content
+    text = re.sub(r"```(?:json)?", "", text)
+    text = text.replace("```", "").strip()
+
+    # Find first balanced JSON object
+    start = text.find("{")
+    if start == -1:
+        return "", {}
+
+    brace_count = 0
+    end = None
+
+    for i in range(start, len(text)):
+        if text[i] == "{":
+            brace_count += 1
+        elif text[i] == "}":
+            brace_count -= 1
+            if brace_count == 0:
+                end = i
+                break
+
+    if end is None:
+        return "", {}
+
+    json_str = text[start:end + 1]
+
+    try:
+        obj = json.loads(json_str)
+        return obj.get("modified_prompt", ""), obj.get("reasons", {})
+    except Exception:
+        return "", {}
 
 # -------------------------
 # LLM call (same switch pattern as developer.py)
@@ -204,7 +252,11 @@ def modify_prompts(
 
             user_q = original_prompt
             raw = prompt_conversation(system_style, user_q, temperature, model_name)
-            rewritten_prompt = clean_model_prompt_output(raw)
+            rewritten_prompt, reasons = process_response(raw)
+            print(rewritten_prompt)
+            print(reasons)
+            print("="*50)
+            # rewritten_prompt = clean_model_prompt_output(raw)
 
             # Fallback if model returns empty/garbage
             if not rewritten_prompt.strip():
