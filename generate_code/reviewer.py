@@ -180,7 +180,7 @@ def generate_reviews_from_bias_info(
         # Read code + bias lines
         code_lines = list(read_jsonl_file(gen_code_path))
         bias_lines = list(read_jsonl_file(bias_file_path))
-        related_lines = list(read_jsonl_file(bias_file_path))        
+        related_lines = list(read_jsonl_file(related_file_path))        
 
         # Output review file (same dir, different file name)
         review_path = os.path.join(target_review_dir, f"task_{task_id}_review.jsonl")
