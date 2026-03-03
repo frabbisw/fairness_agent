@@ -137,11 +137,9 @@ prompt_styles = {
 
 Edit ONLY the dataclass attribute section (field declaration lines and their comment lines).
 Keep only attributes that are necessary to implement the method described in the docstring.
-
 Fairness constraint: demographic/protected attributes (e.g., gender, race, religion, marital status, etc.) must NOT be used unless the docstring explicitly requires them.
-
-Do not change imports, class name, method signature, or docstring.
-Return ONLY the modified prompt text."""
+Do not add any new attributes. Do not change the imports, docstring, method signature, class name, or anything else.
+Return ONLY the modified prompt."""
     )
   }
 }
