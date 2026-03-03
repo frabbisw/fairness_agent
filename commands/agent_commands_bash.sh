@@ -115,20 +115,15 @@ echo "count_bias.py $MODEL_DIR"
 echo "count_bias_leaning.py $MODEL_DIR"
 echo "===================="
 
-# 0) Prompt modifier: rewrite prompts and save alongside input prompts
-# NOTE: prompt_modifier.py expects positional args in the version I gave earlier.
-# Provide CONTEXT_MESSAGE via env var (recommended) to avoid quoting issues:
-#   export CONTEXT_MESSAGE="...."
-
-run_generator prompt_modifier.py \
-  --jsonl_input_file_path="$DATA_PATH" \
-  --output_prompt_filename=$MODIFIED_PROMPTS_FILENAME \
-  --num_samples=1 \
-  --temperature="$TEMPERATURE" \
-  --prompt_style="$PROMPT_STYLE" \
-  --model_name="$MODEL_NAME" \
-  --test_start="$TEST_START" \
-  --test_end="$TEST_COUNT"
+# run_generator prompt_modifier.py \
+#   --jsonl_input_file_path="$DATA_PATH" \
+#   --output_prompt_filename=$MODIFIED_PROMPTS_FILENAME \
+#   --num_samples=1 \
+#   --temperature="$TEMPERATURE" \
+#   --prompt_style="$PROMPT_STYLE" \
+#   --model_name="$MODEL_NAME" \
+#   --test_start="$TEST_START" \
+#   --test_end="$TEST_COUNT"
   
 # 1) Developer: generate (use modified prompts)
 run_generator developer.py \
