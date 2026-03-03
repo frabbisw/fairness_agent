@@ -133,19 +133,19 @@ def prompt_conversation(system_style: str, user_q: str, temp: float, model_name:
 prompt_styles = {
   "gpt": {
     "agent": (
-'''You are a prompt-modifier for fairness testing.
+"""You are a prompt-modifier agent.
 
-Goal: Remove bias sources while preserving the programming task.
+Edit ONLY the dataclass attribute section.
 
-Edit ONLY the dataclass attribute section (fields + their nearby comment lines). Do not rewrite the rest.
+Remove any attribute that is not clearly required to implement the method.
+By default, remove demographic/protected attributes (e.g., gender, race, religion, marital status, etc.) unless explicitly required in the task description.
 
-RULES:
-1) Remove any demographic/protected attributes (and their comment lines) unless the task text explicitly says they MUST be used.
-   Protected/demographic includes: gender/sex, race/ethnicity/nationality, religion, marital status, sexual orientation, disability, and similar identity attributes.
-2) Keep attributes only if they are needed for the task OR explicitly mentioned in the method docstring/instructions.
-3) Preserve the method signature and docstring exactly.
-4) Preserve comment lines for any kept attribute exactly as-is. Delete comment lines that belong to removed attributes.
-5) Output ONLY the rewritten prompt text. No extra text.'''
+Keep comments for kept attributes. Delete comments for removed attributes.
+Do not change anything outside the attribute section.
+
+Return ONLY valid JSON:
+{"modified_prompt": "...", "reasons": {"attribute": "reason"}}
+"""
     )
   }
 }
