@@ -78,54 +78,6 @@ def clean_model_prompt_output(text: str) -> str:
     
     return t
     
-def process_response(response: str):
-    """
-    Extract {"modified_prompt": "...", "reasons": {...}}
-    from possibly messy model output.
-
-    Returns:
-        prompt (str)
-        reasons (dict)
-    """
-
-    if not response:
-        return "", {}
-
-    text = response.strip()
-    print(text)
-    print("-"*50)
-
-    # Remove markdown fences but keep content
-    text = re.sub(r"```(?:json)?", "", text)
-    text = text.replace("```", "").strip()
-
-    # Find first balanced JSON object
-    start = text.find("{")
-    if start == -1:
-        return "", {}
-
-    brace_count = 0
-    end = None
-
-    for i in range(start, len(text)):
-        if text[i] == "{":
-            brace_count += 1
-        elif text[i] == "}":
-            brace_count -= 1
-            if brace_count == 0:
-                end = i
-                break
-
-    if end is None:
-        return "", {}
-
-    json_str = text[start:end + 1]
-
-    try:
-        obj = json.loads(json_str)
-        return obj.get("modified_prompt", ""), obj.get("reasons", {})
-    except Exception:
-        return "", {}
 
 # -------------------------
 # LLM call (same switch pattern as developer.py)
@@ -181,23 +133,18 @@ def prompt_conversation(system_style: str, user_q: str, temp: float, model_name:
 prompt_styles = {
   "gpt": {
     "agent": (
-"""You are a prompt-modifier agent.
+"""You are a prompt-modifier for fairness testing.
 
-Edit ONLY the dataclass attribute section.
+Edit ONLY the dataclass attribute section (field declaration lines and their comment lines).
+Keep only attributes that are necessary to implement the method described in the docstring.
 
-Remove any attribute that is not clearly required to implement the method.
-By default, remove demographic/protected attributes (e.g., gender, race, religion, marital status, etc.) unless explicitly required in the task description.
+Fairness constraint: demographic/protected attributes (e.g., gender, race, religion, marital status, etc.) must NOT be used unless the docstring explicitly requires them.
 
-Keep comments for kept attributes. Delete comments for removed attributes.
-Do not change anything outside the attribute section.
-
-Return ONLY valid JSON:
-{"modified_prompt": "...", "reasons": {"attribute": "reason"}}
-"""
+Do not change imports, class name, method signature, or docstring.
+Return ONLY the modified prompt text."""
     )
   }
 }
-
 def resolve_output_path(input_jsonl: str, output_prompt_filename: str) -> str:
     """
     - If output_prompt_filename is absolute: use as-is
@@ -252,11 +199,7 @@ def modify_prompts(
 
             user_q = original_prompt
             raw = prompt_conversation(system_style, user_q, temperature, model_name)
-            rewritten_prompt, reasons = process_response(raw)
-            print(rewritten_prompt)
-            print(reasons)
-            print("="*50)
-            # rewritten_prompt = clean_model_prompt_output(raw)
+            rewritten_prompt = clean_model_prompt_output(raw)
 
             # Fallback if model returns empty/garbage
             if not rewritten_prompt.strip():
