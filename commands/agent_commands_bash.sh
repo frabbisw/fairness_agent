@@ -127,7 +127,6 @@ echo "===================="
   
 # 1) Developer: generate (use modified prompts)
 run_generator developer.py \
-  # --jsonl_input_file_path="$MODIFIED_DATA_PATH" \
   --jsonl_input_file_path="$DATA_PATH" \
   --output_base_dir="$MODEL_DIR/response/developer" \
   --num_samples="$SAMPLING" \
@@ -142,7 +141,6 @@ run_test_phase "developer" "$MODEL_DIR/response/developer"
 
 # 3) Reviewer: generate (use modified prompts for consistency)
 run_generator reviewer.py \
-  # --prompts_jsonl_path="$MODIFIED_DATA_PATH" \
   --prompts_jsonl_path="$DATA_PATH" \
   --src_gc_base_dir="$MODEL_DIR/response/developer" \
   --target_review_base_dir="$MODEL_DIR/response/reviewer" \
@@ -157,7 +155,6 @@ run_generator reviewer.py \
 
 # 4) Repairer: generate
 run_generator repairer.py \
-  # --prompts_jsonl_path="$MODIFIED_DATA_PATH" \
   --prompts_jsonl_path="$DATA_PATH" \
   --src_gc_base_dir="$MODEL_DIR/response/developer" \
   --src_review_base_dir="$MODEL_DIR/response/reviewer" \
