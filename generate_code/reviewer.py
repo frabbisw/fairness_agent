@@ -193,9 +193,8 @@ def generate_reviews_from_bias_info(
                 code_obj = code_lines[i]
                 bias_obj = bias_lines[i]
                 related_obj = related_lines[i]                
-                print(related_obj)
-                import pdb; pdb.set_trace()
-                if bias_obj["bias_info"] == "none" and bias_obj["related_info"] == "none":
+
+                if bias_obj["bias_info"] == "none" and related_obj["related_info"] == "none":
                     json.dump({"review": "pass"}, out_f, ensure_ascii=False)
                     out_f.write("\n")
                     continue
