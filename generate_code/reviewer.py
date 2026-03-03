@@ -110,25 +110,33 @@ def review_conversation(style, qs, temp, model_name) -> str:
 
 
 # --- Prompt styles (same dict pattern as developer.py) ---
+# prompt_styles = {
+#     "gpt": {
+#         'agent': '''You are a fairness-aware code reviewer.
+# Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON edits {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. "old" MUST be an exact substring of GENERATED_CODE.
+# Goal: remove all dependence on SENSITIVE_ATTRIBUTES by deleting their boolean predicates (and adjacent and/or) while keeping other logic unchanged.
+# Do NOT change numeric thresholds/sets, do NOT add new predicates/attributes/functions, and do NOT delete control-structure lines (if/elif/else/return); only edit condition substrings.
+# No code, no extra text.'''
+#     }
+# }
 prompt_styles = {
     "gpt": {
-        # "agent": '''You are a fairness-aware code reviewer. 
-        # Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON: {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. 
-        # "old" MUST be an exact substring of GENERATED_CODE. 
-        # Make minimal edits to remove all dependence on SENSITIVE_ATTRIBUTES. ensure the functional correctness, No code, no extra text.'''
         'agent': '''You are a fairness-aware code reviewer.
-Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON edits {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. "old" MUST be an exact substring of GENERATED_CODE.
-Goal: remove all dependence on SENSITIVE_ATTRIBUTES by deleting their boolean predicates (and adjacent and/or) while keeping other logic unchanged.
-Do NOT change numeric thresholds/sets, do NOT add new predicates/attributes/functions, and do NOT delete control-structure lines (if/elif/else/return); only edit condition substrings.
+Given PROMPT, GENERATED_CODE, SENSITIVE_ATTRIBUTES, and MISSING_RELATED_ATTRIBUTES, output ONLY JSON edits {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}.
+"old" MUST be an exact substring of GENERATED_CODE.
+Goal: remove all predicates involving SENSITIVE_ATTRIBUTES and ensure all MISSING_RELATED_ATTRIBUTES are used instead.
+Do NOT change numeric thresholds/sets, do NOT introduce new attributes/functions, and do NOT delete control-structure lines (if/elif/else/return); only edit condition substrings.
 No code, no extra text.'''
     }
 }
+
 
 def generate_reviews_from_bias_info(
     prompts_file_path: str,
     src_gc_dir: str,
     target_review_dir: str,
     bias_info_base_path: str,
+    related_info_base_path: str,
     iterations: int,
     temperature: float,
     style: str,
@@ -160,13 +168,19 @@ def generate_reviews_from_bias_info(
 
         # bias_file_path = resolve_bias_file(task_id, bias_info_base_path)
         bias_file_path = os.path.join(bias_info_base_path, f"bias_info{task_id}.jsonl")
+        related_file_path = os.path.join(related_info_base_path, f"related_info{task_id}.jsonl")
+        
         if not os.path.exists(bias_file_path):
             print(f"[WARN] Missing bias info file: {bias_file_path}")
+            continue
+        if not os.path.exists(related_file_path):
+            print(f"[WARN] Missing bias info file: {related_file_path}")
             continue
 
         # Read code + bias lines
         code_lines = list(read_jsonl_file(gen_code_path))
         bias_lines = list(read_jsonl_file(bias_file_path))
+        related_lines = list(read_jsonl_file(bias_file_path))        
 
         # Output review file (same dir, different file name)
         review_path = os.path.join(target_review_dir, f"task_{task_id}_review.jsonl")
@@ -178,8 +192,9 @@ def generate_reviews_from_bias_info(
             for i in range(n):
                 code_obj = code_lines[i]
                 bias_obj = bias_lines[i]
+                related_obj = related_lines[i]                
 
-                if bias_obj["bias_info"] == "none":
+                if bias_obj["bias_info"] == "none" and bias_obj["related_info"] == "none":
                     json.dump({"review": "pass"}, out_f, ensure_ascii=False)
                     out_f.write("\n")
                     continue
@@ -192,6 +207,8 @@ def generate_reviews_from_bias_info(
                     f"{code_obj.get('generated_code','')}\n\n"
                     "SENSITIVE_ATTRIBUTES:\n"
                     f"{bias_obj['bias_info']}\n"
+                    "MISSING_RELATED_ATTRIBUTES"
+                    f"{related_obj['related_info']}\n"
                 )
 
                 instruction = review_conversation(style, qs, temperature, model_name)
@@ -202,11 +219,7 @@ def generate_reviews_from_bias_info(
 
 
 if __name__ == "__main__":
-    import argparse
-
     """
-    New CLI style:
-
     python reviewer.py \
       --prompts_jsonl_path=... \
       --src_gc_base_dir=... \
@@ -216,6 +229,7 @@ if __name__ == "__main__":
       --prompt_style=... \
       --model_name=... \
       --bias_info_base_path=... \
+      --related_info_base_path=... \
       --test_start=... \
       --test_end=...
     """
@@ -233,6 +247,7 @@ if __name__ == "__main__":
     parser.add_argument("--prompt_style", required=True)
     parser.add_argument("--model_name", required=True)
     parser.add_argument("--bias_info_base_path", required=True)
+    parser.add_argument("--related_info_base_path", required=True)
     parser.add_argument("--test_start", type=int, required=True)
     parser.add_argument("--test_end", type=int, required=True)
 
@@ -246,6 +261,7 @@ if __name__ == "__main__":
     PROMPT_STYLE = args.prompt_style
     MODEL_NAME = args.model_name
     BIAS_INFO_BASE_PATH = args.bias_info_base_path
+    RELATED_INFO_BASE_PATH = args.related_info_base_path
     TEST_START = args.test_start
     TEST_END = args.test_end
 
@@ -257,6 +273,7 @@ if __name__ == "__main__":
     print("PROMPT_STYLE", PROMPT_STYLE)
     print("MODEL_NAME", MODEL_NAME)
     print("BIAS_INFO_BASE_PATH", BIAS_INFO_BASE_PATH)
+    print("RELATED_INFO_BASE_PATH", RELATED_INFO_BASE_PATH)
     print("TEST_START", TEST_START)
     print("TEST_END", TEST_END)
 
@@ -267,6 +284,7 @@ if __name__ == "__main__":
         src_gc_dir=src_gc_base_dir,
         target_review_dir=target_review_base_dir,
         bias_info_base_path=BIAS_INFO_BASE_PATH,
+        related_info_base_path=BIAS_INFO_BASE_PATH,
         iterations=int(num_samples),
         temperature=float(TEMPERATURE),
         style=prompt_styles[MODEL_NAME][PROMPT_STYLE],
