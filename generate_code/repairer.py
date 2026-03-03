@@ -123,7 +123,6 @@ prompt_styles = {
     }
 }
 
-
 def generate_repaired_code(
     prompts_file_path: str,
     src_gc_dir: str,
