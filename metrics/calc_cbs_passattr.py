@@ -184,5 +184,5 @@ if __name__ == "__main__":
     main()
 
 # from same folder run    
-# python calc_cbs_passattr.py  --related ../outputs/agentic/gpt1default/test_result/developer/aggregated_related_ratios_after.json  --bias ../outputs/agentic/gpt1default/test_result/developer/aggregated_bias_ratios_after.json  --tasks  ../dataset/tasks.json  --out  ../outputs/agentic/gpt1default/metrics/cbs_passattr_paper.json
-# python calc_cbs_passattr.py  --related ../outputs/agentic/gpt1default/test_result/repairer/aggregated_related_ratios_after.json  --bias ../outputs/agentic/gpt1default/test_result/repairer/aggregated_bias_ratios_after.json  --tasks  ../dataset/tasks.json  --out  ../outputs/agentic/gpt1default/metrics/cbs_passattr_paper.json
+# python calc_cbs_passattr.py  --related ../outputs/agentic/gpt1default/test_result/developer/aggregated_related_ratios_after.json  --bias ../outputs/agentic/gpt1default/test_result/developer/aggregated_bias_ratios_after.json  --tasks  ../dataset/tasks.json  --out  ../outputs/agentic/gpt1default/metrics/cbs_passattr_paper_dev.json
+# python calc_cbs_passattr.py  --related ../outputs/agentic/gpt1default/test_result/repairer/aggregated_related_ratios_after.json  --bias ../outputs/agentic/gpt1default/test_result/repairer/aggregated_bias_ratios_after.json  --tasks  ../dataset/tasks.json  --out  ../outputs/agentic/gpt1default/metrics/cbs_passattr_paper_rep.json
