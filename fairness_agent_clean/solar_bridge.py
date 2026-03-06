@@ -1,44 +1,55 @@
 """
 solar_bridge.py
 ===============
-Reads Solar's existing output files produced by the Solar bash pipeline.
+Reads and writes files in the exact structure Solar's bash pipeline uses.
 
-What Solar already produces (from parse_bias_info.py in your repo):
-  <model_dir>/test_result/<phase>/bias_info_files/bias_info<task_id>.jsonl
-  <model_dir>/test_result/<phase>/bias_info_files/related_info<task_id>.jsonl
+Confirmed from agent_commands_bash.sh:
 
-Each file has one JSON object per sample (iteration), e.g.:
-  {"bias_info": "gender,age"}        ← attributes that failed tests
-  {"related_info": "income"}         ← task-relevant attrs missing from code
-  {"bias_info": "none"}              ← no bias found
+  MODEL_DIR/
+  ├── response/
+  │   ├── developer/
+  │   │   └── task_<id>_generated_code.jsonl   ← developer writes here
+  │   └── repairer/
+  │       └── task_<id>_generated_code.jsonl   ← repairer writes here
+  └── test_result/
+      ├── developer/
+      │   └── bias_info_files/
+      │       ├── bias_info<id>.jsonl           ← Solar writes, we read
+      │       └── related_info<id>.jsonl        ← Solar writes, we read
+      └── repairer/
+          └── bias_info_files/
+              ├── bias_info<id>.jsonl
+              └── related_info<id>.jsonl
 
-This module ONLY reads those files — it does NOT re-run Solar or call any LLM.
-Solar is a deterministic tool; we treat its outputs as ground truth.
+bias_info<id>.jsonl — one JSON line per sample:
+    {"bias_info": "gender,age"}   → attributes that failed Solar tests
+    {"bias_info": "none"}         → no bias
 
-Two-phase usage in the pipeline
---------------------------------
-Phase "developer" : Solar results after the Developer generates code
-Phase "repairer"  : Solar results after the Repairer fixes code
-                    We use "repairer_iter{N}" to keep iterations separate.
+related_info<id>.jsonl — one JSON line per sample:
+    {"related_info": "income"}    → task-relevant attrs missing from code
+    {"related_info": "none"}      → all present
 """
 
 import json
-import os
+import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 
+# ---------------------------------------------------------------------------
+# Data class representing one Solar test result
+# ---------------------------------------------------------------------------
 @dataclass
 class SolarResult:
-    task_id:       str
-    phase:         str
-    sample_index:  int                 # which iteration (0-based)
-    biased_attrs:  list[str] = field(default_factory=list)
+    task_id:      str
+    phase:        str           # "developer" or "repairer"
+    biased_attrs: list[str] = field(default_factory=list)
     missing_attrs: list[str] = field(default_factory=list)
 
     @property
     def passed(self) -> bool:
-        return len(self.biased_attrs) == 0 and len(self.missing_attrs) == 0
+        return not self.biased_attrs and not self.missing_attrs
 
     def summary(self) -> str:
         if self.passed:
@@ -54,15 +65,17 @@ class SolarResult:
         return {
             "task_id":      self.task_id,
             "phase":        self.phase,
-            "sample_index": self.sample_index,
             "biased_attrs": self.biased_attrs,
             "missing_attrs":self.missing_attrs,
             "passed":       self.passed,
         }
 
 
-def _parse_attr_string(value: str) -> list[str]:
-    """Parse Solar's comma-separated attribute string. 'none' → []."""
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+def _parse_attrs(value: str) -> list[str]:
+    """'gender,age' → ['gender','age'].  'none'/'' → []."""
     if not value or value.strip().lower() == "none":
         return []
     return [a.strip() for a in value.split(",") if a.strip()]
@@ -71,83 +84,113 @@ def _parse_attr_string(value: str) -> list[str]:
 def _read_jsonl(path: Path) -> list[dict]:
     if not path.exists():
         return []
-    records = []
+    rows = []
     with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
                 try:
-                    records.append(json.loads(line))
+                    rows.append(json.loads(line))
                 except json.JSONDecodeError:
                     pass
-    return records
+    return rows
 
 
-def read_solar_result(
-    task_id: str,
-    model_dir: str,
-    phase: str,
-    sample_index: int = 0,
-) -> SolarResult:
-    """
-    Read Solar's bias_info and related_info for a specific task + phase + sample.
-
-    Args:
-        task_id:      The task ID string (e.g. "0", "42")
-        model_dir:    Base output directory (same as Solar's model_dir)
-        phase:        "developer" | "repairer" | "repairer_iter1" etc.
-        sample_index: Which sample line to read (0-based)
-
-    Returns:
-        SolarResult with biased_attrs and missing_attrs populated.
-    """
-    base = Path(model_dir) / "test_result" / phase / "bias_info_files"
-    bias_path    = base / f"bias_info{task_id}.jsonl"
-    related_path = base / f"related_info{task_id}.jsonl"
-
-    bias_records    = _read_jsonl(bias_path)
-    related_records = _read_jsonl(related_path)
-
-    biased  = []
-    missing = []
-
-    if sample_index < len(bias_records):
-        biased = _parse_attr_string(bias_records[sample_index].get("bias_info", "none"))
-
-    if sample_index < len(related_records):
-        missing = _parse_attr_string(related_records[sample_index].get("related_info", "none"))
-
-    return SolarResult(
-        task_id=task_id,
-        phase=phase,
-        sample_index=sample_index,
-        biased_attrs=biased,
-        missing_attrs=missing,
-    )
-
-
+# ---------------------------------------------------------------------------
+# Write code so Solar can test it
+# ---------------------------------------------------------------------------
 def write_code_for_solar(
     code: str,
     task_id: str,
     model_dir: str,
     phase: str,
-    sample_index: int = 0,
-    num_samples: int = 1,
+    num_samples: int = 5,
 ) -> Path:
     """
-    Write generated code to the path Solar expects, so Solar can test it.
-
-    Solar expects:
-      <model_dir>/response/<phase>/task_<task_id>_generated_code.jsonl
-    with one {"generated_code": "..."} per line (one per sample).
+    Write generated/repaired code to the path Solar expects.
+    Solar reads: MODEL_DIR/response/<phase>/task_<id>_generated_code.jsonl
+    One JSON line per sample (Solar tests each sample independently).
+    We write the same code for all samples.
     """
-    path = Path(model_dir) / "response" / phase / f"task_{task_id}_generated_code.jsonl"
+    path = (Path(model_dir) / "response" / phase
+            / f"task_{task_id}_generated_code.jsonl")
     path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Write num_samples lines (Solar tests each sample; we repeat same code)
     with open(path, "w", encoding="utf-8") as f:
         for _ in range(num_samples):
             json.dump({"generated_code": code}, f, ensure_ascii=False)
             f.write("\n")
-
     return path
+
+
+# ---------------------------------------------------------------------------
+# Read Solar's output after it has run
+# ---------------------------------------------------------------------------
+def read_solar_result(
+    task_id: str,
+    model_dir: str,
+    phase: str,          # "developer" or "repairer"
+    sample_index: int = 0,
+) -> SolarResult:
+    """
+    Read Solar's bias_info and related_info for one task.
+    sample_index selects which sample line to read (0 = first sample).
+    """
+    base = Path(model_dir) / "test_result" / phase / "bias_info_files"
+    bias_rows    = _read_jsonl(base / f"bias_info{task_id}.jsonl")
+    related_rows = _read_jsonl(base / f"related_info{task_id}.jsonl")
+
+    biased = (
+        _parse_attrs(bias_rows[sample_index].get("bias_info", "none"))
+        if sample_index < len(bias_rows) else []
+    )
+    missing = (
+        _parse_attrs(related_rows[sample_index].get("related_info", "none"))
+        if sample_index < len(related_rows) else []
+    )
+
+    return SolarResult(
+        task_id=task_id,
+        phase=phase,
+        biased_attrs=biased,
+        missing_attrs=missing,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Run Solar's bash pipeline for one phase
+# ---------------------------------------------------------------------------
+def run_solar_bash(
+    solar_bash: str,
+    data_path: str,
+    model_dir: str,
+    model_name: str,
+    sampling: int,
+    temperature: float,
+    prompt_style: str,
+    test_start: int,
+    test_end: int,
+) -> bool:
+    """
+    Call agent_commands_bash.sh with the exact argument order it expects:
+      $1=SAMPLING $2=TEMPERATURE $3=PROMPT_STYLE $4=DATA_PATH
+      $5=MODEL_DIR $6=MODEL_NAME $7=TEST_START $8=TEST_END
+
+    Returns True if the command succeeded.
+    """
+    cmd = [
+        "bash", solar_bash,
+        str(sampling),
+        str(temperature),
+        prompt_style,
+        data_path,
+        model_dir,
+        model_name,
+        str(test_start),
+        str(test_end),
+    ]
+    print(f"  [Solar bash] {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=False, text=True)
+    if result.returncode != 0:
+        print(f"  [WARN] Solar bash returned code {result.returncode}")
+        return False
+    return True

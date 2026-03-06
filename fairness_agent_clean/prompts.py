@@ -1,16 +1,15 @@
 """
-prompts.py  –  All LLM system prompts for the FairnessAgent pipeline.
+prompts.py
+==========
+All LLM system prompts for the FairnessAgent pipeline.
 
-Design rules
-------------
-- Generic: zero dataset-specific attribute names hard-coded
-- Brief: each prompt < 80 words (LLMs lose long system prompts mid-context)
-- Role-first: "You are a [role]." always leads
-- Each agent has one primary style ("agent") + ablation variants
+Rules:
+- Generic: no dataset-specific attribute names hard-coded
+- Brief: < 80 words each (LLMs lose long system prompts mid-context)
+- Role-first framing
 """
 
 DEVELOPER_PROMPTS = {
-    # --- Primary (used in agent pipeline) ---
     "agent": (
         "You are a careful, fair code developer. "
         "Complete ONLY the given method (keep the exact signature and docstring). "
@@ -19,7 +18,6 @@ DEVELOPER_PROMPTS = {
         "Output only the method code (signature + docstring + body). "
         "No class definition, no markdown, no extra text."
     ),
-    # --- Ablation baselines (match Solar paper exactly for direct comparison) ---
     "default": (
         "You are a careful code developer. "
         "Complete ONLY the given method. "
@@ -38,19 +36,16 @@ DEVELOPER_PROMPTS = {
 }
 
 ANALYZER_PROMPTS = {
-    # --- Primary ---
-    # The Analyzer is the genuine "review" step: fault localization backed by
-    # test evidence. It explains WHY and WHAT — never writes code itself.
+    # Primary: genuine review — fault localization, not code generation
     "agent": (
         "You are a fairness code analyzer. "
-        "You receive a method and results from automated bias tests. "
+        "You receive a method and results of automated bias tests. "
         "Write a concise natural-language repair plan that: "
         "(1) explains why each biased attribute causes unfair outcomes in this code, "
         "(2) states which conditions to remove or change, "
         "(3) explains how to incorporate any missing task-relevant attributes. "
         "Do NOT write code. Under 150 words."
     ),
-    # --- Ablation ---
     "structured": (
         "You are a fairness code analyzer. "
         "Given a method and test results, produce a numbered repair plan: "
@@ -62,9 +57,7 @@ ANALYZER_PROMPTS = {
 }
 
 REPAIRER_PROMPTS = {
-    # --- Primary ---
-    # Full guided rewrite — justified by ChatRepair (ASE 2023), Agentless (2024).
-    # Single short methods are best repaired by complete rewrite, not patches.
+    # Full guided rewrite — justified by ChatRepair (ASE 2023), Agentless (2024)
     "agent": (
         "You are a code repairer. "
         "Rewrite the given method following the repair plan exactly. "
@@ -72,7 +65,6 @@ REPAIRER_PROMPTS = {
         "No class definition, no markdown. "
         "Do not change the method signature or docstring."
     ),
-    # --- Ablation ---
     "minimal": (
         "You are a code repairer. "
         "Make the minimum necessary edits to follow the repair plan. "
@@ -93,22 +85,20 @@ def get_prompt(agent: str, style: str = "agent") -> str:
     prompts = registry[agent]
     if style not in prompts:
         raise ValueError(
-            f"Style '{style}' not found for agent '{agent}'. "
+            f"Style '{style}' not found for '{agent}'. "
             f"Available: {list(prompts)}"
         )
     return prompts[style]
 
 
-# ---------------------------------------------------------------------------
-# Ablation matrix — used by run_ablation.py
-# Each entry: (developer_style, analyzer_style, repairer_style, label)
-# ---------------------------------------------------------------------------
+# Ablation matrix for run_ablation.py
+# (developer_style, analyzer_style, repairer_style, label)
 ABLATION_MATRIX = {
-    "baseline_default":  ("default",                 None,         None,      "No fairness hint (baseline)"),
-    "baseline_cot":      ("chain_of_thoughts",        None,         None,      "CoT only (Solar paper baseline)"),
-    "baseline_pcot":     ("positive_chain_of_thoughts", None,       None,      "P-CoT only (Solar paper baseline)"),
-    "agent_full":        ("agent",                   "agent",      "agent",    "Full agent pipeline (ours)"),
-    "agent_no_analyzer": ("agent",                   None,         "agent",    "Ablation: no Analyzer"),
-    "agent_min_repair":  ("agent",                   "agent",      "minimal",  "Ablation: minimal repair"),
-    "agent_struct_plan": ("agent",                   "structured", "agent",    "Ablation: structured plan"),
+    "baseline_default":  ("default",                  None,         None,      "No fairness hint (baseline)"),
+    "baseline_cot":      ("chain_of_thoughts",         None,         None,      "CoT only (Solar paper baseline)"),
+    "baseline_pcot":     ("positive_chain_of_thoughts",None,         None,      "P-CoT only (Solar paper baseline)"),
+    "agent_full":        ("agent",                    "agent",      "agent",    "Full agent pipeline (ours)"),
+    "agent_no_analyzer": ("agent",                    None,         "agent",    "Ablation: no Analyzer"),
+    "agent_min_repair":  ("agent",                    "agent",      "minimal",  "Ablation: minimal repair"),
+    "agent_struct_plan": ("agent",                    "structured", "agent",    "Ablation: structured plan"),
 }

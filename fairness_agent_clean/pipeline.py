@@ -3,47 +3,48 @@ pipeline.py
 ===========
 LangGraph multi-agent pipeline for social bias mitigation.
 
-Agents
-------
-1. Developer  – LLM generates code from prompt
-2. Analyzer   – LLM reads Solar test results → natural-language repair plan
-3. Repairer   – LLM rewrites code following the Analyzer's plan
+Full pipeline (what this file handles end-to-end):
+─────────────────────────────────────────────────────────────────
+  Step 1  Developer LLM  → generates code from prompt
+  Step 2  Solar bash     → tests developer code, writes bias_info files
+  Step 3  Analyzer LLM   → reads bias_info, writes natural-language repair plan
+  Step 4  Repairer LLM   → rewrites code following the plan
+  Step 5  Solar bash     → tests repaired code, writes bias_info files
+          └─ if bias remains and iterations left → back to Step 3
+          └─ if passed or max iterations → END
+─────────────────────────────────────────────────────────────────
 
-Solar is a TOOL (deterministic subprocess + file reader), NOT an agent.
-It runs between Developer→Analyzer and Repairer→Analyzer.
+Solar bash call signature (from agent_commands_bash.sh):
+  bash agent_commands_bash.sh \
+    $1=SAMPLING  $2=TEMPERATURE  $3=PROMPT_STYLE  $4=DATA_PATH \
+    $5=MODEL_DIR  $6=MODEL_NAME  $7=TEST_START  $8=TEST_END
 
-Graph
------
+Solar directory structure written by bash script:
+  MODEL_DIR/response/developer/task_<id>_generated_code.jsonl
+  MODEL_DIR/test_result/developer/bias_info_files/bias_info<id>.jsonl
+  MODEL_DIR/test_result/developer/bias_info_files/related_info<id>.jsonl
+  MODEL_DIR/response/repairer/task_<id>_generated_code.jsonl
+  MODEL_DIR/test_result/repairer/bias_info_files/bias_info<id>.jsonl
+  MODEL_DIR/test_result/repairer/bias_info_files/related_info<id>.jsonl
 
-  [developer] ──► [run_solar] ──► (route)
-                                     │ bias found
-                                     ▼
-                                 [analyzer] ──► [repairer] ──► [run_solar] ──► (route)
-                                                                                   │ bias found AND iter < max
-                                                                                   ▼
-                                                                               [analyzer] ──► ... (loop)
-                                                                                   │ passed OR iter >= max
-                                                                                   ▼
-                                                                                 [END]
-
-Usage
------
+Run (full fresh run, 5 tasks):
+  cd fairness_agent_clean
   python pipeline.py \
-    --prompts_path   ../dataset/prompts.jsonl \
-    --model_dir      ../outputs/gpt_agent \
-    --output_dir     ../outputs/gpt_agent/agent_results \
+    --prompts_path   ../dataset/prompts_sample.jsonl \
+    --model_dir      ../outputs/agent_test \
+    --output_dir     ../outputs/agent_test/results \
+    --solar_bash     ../commands/agent_commands_bash.sh \
+    --model_name     gpt \
+    --sampling       5 \
     --test_start     0 \
-    --test_end       10 \
+    --test_end       5 \
     --max_iterations 3
 """
 
 import json
 import os
-import subprocess
-import sys
 from pathlib import Path
-from typing import TypedDict, Annotated
-import operator
+from typing import TypedDict
 
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
@@ -51,39 +52,47 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from dotenv import load_dotenv
 
 from prompts import get_prompt
-from solar_bridge import SolarResult, read_solar_result, write_code_for_solar
+from solar_bridge import (
+    SolarResult,
+    write_code_for_solar,
+    read_solar_result,
+    run_solar_bash,
+)
 
 load_dotenv()
 
 
 # ---------------------------------------------------------------------------
-# Typed shared state — passed between every node
+# Shared state — every node reads and writes this
 # ---------------------------------------------------------------------------
 class AgentState(TypedDict):
-    # ── Constant across iterations ──
+    # ── Fixed for the whole run ──────────────────────────────────────────
     task_id:        str
     prompt:         str
     model_dir:      str
-    num_samples:    int
+    output_dir:     str
+    solar_bash:     str      # path to agent_commands_bash.sh
+    data_path:      str      # path to prompts JSONL (passed to Solar bash)
+    model_name:     str      # "gpt" (used by Solar bash for dir naming)
+    sampling:       int
+    temperature:    float
     max_iterations: int
-    solar_bash:     str          # path to agent_commands_bash.sh; "" = cached mode
-    data_path:      str          # path to prompts.jsonl (passed to Solar bash)
-    prompt_styles:  dict         # {"developer": str, "analyzer": str, "repairer": str}
+    prompt_styles:  dict     # {"developer": str, "analyzer": str, "repairer": str}
 
-    # ── Updated each iteration ──
+    # ── Updated each iteration ───────────────────────────────────────────
     iteration:      int
     current_code:   str
-    solar_result:   dict         # SolarResult.to_dict()
-    analysis:       str          # Analyzer's repair plan
+    solar_result:   dict     # SolarResult.to_dict()
+    analysis:       str      # Analyzer's repair plan
 
-    # ── Append-only log ──
-    history:        list         # one entry per repair iteration
+    # ── Append-only log ──────────────────────────────────────────────────
+    history:        list
 
 
 # ---------------------------------------------------------------------------
-# LLM factory — only GPT active; extend here for other models
+# LLM — only GPT active; extend here for other models
 # ---------------------------------------------------------------------------
-def make_llm(temperature: float = 1.0) -> ChatOpenAI:
+def make_llm(temperature: float) -> ChatOpenAI:
     return ChatOpenAI(
         model="gpt-3.5-turbo",
         temperature=temperature,
@@ -92,94 +101,82 @@ def make_llm(temperature: float = 1.0) -> ChatOpenAI:
 
 
 # ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-def _phase_name(iteration: int) -> str:
-    """Solar output subdirectory name for a given iteration."""
-    return "developer" if iteration == 0 else f"repairer_iter{iteration}"
-
-
-def _run_solar_bash(state: AgentState, phase: str):
-    """
-    Write the current code to disk and call Solar's bash runner.
-    Only called in LIVE mode (solar_bash is set).
-    """
-    write_code_for_solar(
-        code=state["current_code"],
-        task_id=state["task_id"],
-        model_dir=state["model_dir"],
-        phase=phase,
-        num_samples=state["num_samples"],
-    )
-    cmd = [
-        "bash", state["solar_bash"],
-        str(state["num_samples"]),  # sampling
-        "1.0",                      # temperature (Solar uses this internally)
-        "agent",                    # prompt_style label (for Solar's dir naming)
-        state["data_path"],
-        state["model_dir"],
-        "gpt",                      # model_name label (for Solar's dir naming)
-        state["task_id"],           # test_start
-        str(int(state["task_id"]) + 1),  # test_end
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"  [WARN] Solar bash failed for task {state['task_id']}:\n"
-              f"  {result.stderr[:300]}")
-
-
-# ---------------------------------------------------------------------------
 # Node 1: Developer
-# Generates code from the prompt. Only runs on iteration 0.
+# Calls the LLM to generate code from the prompt.
+# Writes code to MODEL_DIR/response/developer/ so Solar can test it.
 # ---------------------------------------------------------------------------
 def developer_node(state: AgentState) -> AgentState:
     print(f"  [Developer] task={state['task_id']}")
-    system = get_prompt("developer", state["prompt_styles"].get("developer", "agent"))
-    resp = make_llm(temperature=1.0).invoke([
+
+    system = get_prompt("developer", state["prompt_styles"]["developer"])
+    resp = make_llm(state["temperature"]).invoke([
         SystemMessage(content=system),
         HumanMessage(content=state["prompt"]),
     ])
-    return {**state, "current_code": resp.content.strip(), "iteration": 0}
+    code = resp.content.strip()
+
+    # Write to Solar's expected location
+    write_code_for_solar(
+        code=code,
+        task_id=state["task_id"],
+        model_dir=state["model_dir"],
+        phase="developer",
+        num_samples=state["sampling"],
+    )
+
+    return {**state, "current_code": code, "iteration": 0}
 
 
 # ---------------------------------------------------------------------------
-# Node 2: Solar (tool node — deterministic, no LLM)
-# Writes code to disk if in live mode, then reads Solar's output files.
+# Node 2: Solar (deterministic tool — no LLM)
+# Calls the Solar bash pipeline then reads its output files.
+# Phase is "developer" on iteration 0, "repairer" on all subsequent iterations.
 # ---------------------------------------------------------------------------
 def solar_node(state: AgentState) -> AgentState:
-    phase = _phase_name(state["iteration"])
+    phase = "developer" if state["iteration"] == 0 else "repairer"
+    task_id = state["task_id"]
 
-    if state.get("solar_bash"):           # LIVE mode: run Solar
-        _run_solar_bash(state, phase)
-    # CACHED mode: Solar outputs already exist on disk — just read them
+    print(f"  [Solar/{phase}] task={task_id} — running bash pipeline...")
+
+    run_solar_bash(
+        solar_bash=state["solar_bash"],
+        data_path=state["data_path"],
+        model_dir=state["model_dir"],
+        model_name=state["model_name"],
+        sampling=state["sampling"],
+        temperature=state["temperature"],
+        prompt_style=state["prompt_styles"]["developer"],  # Solar uses this for dir label
+        test_start=int(task_id),
+        test_end=int(task_id) + 1,
+    )
 
     result: SolarResult = read_solar_result(
-        task_id=state["task_id"],
+        task_id=task_id,
         model_dir=state["model_dir"],
         phase=phase,
         sample_index=0,
     )
-    print(f"  [Solar/{phase}] task={state['task_id']}: {result.summary()}")
+
+    print(f"  [Solar/{phase}] task={task_id}: {result.summary()}")
     return {**state, "solar_result": result.to_dict()}
 
 
 # ---------------------------------------------------------------------------
-# Node 3: Analyzer (the genuine "review" step)
-# Fault localization: explains WHY attributes cause bias, WHAT to change.
-# Does NOT write code.
+# Node 3: Analyzer (genuine review — fault localization, no code writing)
+# Reads Solar test results and writes a natural-language repair plan.
 # ---------------------------------------------------------------------------
 def analyzer_node(state: AgentState) -> AgentState:
     solar = state["solar_result"]
 
-    if solar.get("passed"):
+    if solar["passed"]:
         return {**state, "analysis": "PASS"}
 
     print(f"  [Analyzer] task={state['task_id']} iter={state['iteration']}")
-    system = get_prompt("analyzer", state["prompt_styles"].get("analyzer", "agent"))
 
-    biased_str  = ", ".join(solar.get("biased_attrs",  [])) or "none"
-    missing_str = ", ".join(solar.get("missing_attrs", [])) or "none"
+    biased_str  = ", ".join(solar["biased_attrs"])  or "none"
+    missing_str = ", ".join(solar["missing_attrs"]) or "none"
 
+    system = get_prompt("analyzer", state["prompt_styles"]["analyzer"])
     user_msg = (
         f"CODE:\n{state['current_code']}\n\n"
         f"BIASED ATTRIBUTES (caused Solar test failures):\n{biased_str}\n\n"
@@ -195,15 +192,16 @@ def analyzer_node(state: AgentState) -> AgentState:
 
 # ---------------------------------------------------------------------------
 # Node 4: Repairer
-# Guided full rewrite based on Analyzer's plan.
-# Approach justified by ChatRepair (ASE 2023) and Agentless (arXiv 2024).
+# Rewrites the method guided by the Analyzer's plan.
+# Writes repaired code to MODEL_DIR/response/repairer/ so Solar can re-test.
 # ---------------------------------------------------------------------------
 def repairer_node(state: AgentState) -> AgentState:
     if state["analysis"] == "PASS":
         return state
 
     print(f"  [Repairer] task={state['task_id']} iter={state['iteration']}")
-    system = get_prompt("repairer", state["prompt_styles"].get("repairer", "agent"))
+
+    system = get_prompt("repairer", state["prompt_styles"]["repairer"])
     user_msg = (
         f"CURRENT CODE:\n{state['current_code']}\n\n"
         f"REPAIR PLAN:\n{state['analysis']}"
@@ -214,6 +212,15 @@ def repairer_node(state: AgentState) -> AgentState:
     ])
     repaired = resp.content.strip()
 
+    # Write to Solar's expected location for repairer phase
+    write_code_for_solar(
+        code=repaired,
+        task_id=state["task_id"],
+        model_dir=state["model_dir"],
+        phase="repairer",
+        num_samples=state["sampling"],
+    )
+
     # Log this iteration
     entry = {
         "iteration":    state["iteration"],
@@ -222,6 +229,7 @@ def repairer_node(state: AgentState) -> AgentState:
         "analysis":     state["analysis"],
         "code_after":   repaired,
     }
+
     return {
         **state,
         "current_code": repaired,
@@ -230,25 +238,25 @@ def repairer_node(state: AgentState) -> AgentState:
 
 
 # ---------------------------------------------------------------------------
-# Node 5: Increment — advance the iteration counter after each repair
+# Node 5: Increment — advance iteration counter after each repair cycle
 # ---------------------------------------------------------------------------
 def increment_node(state: AgentState) -> AgentState:
     return {**state, "iteration": state["iteration"] + 1}
 
 
 # ---------------------------------------------------------------------------
-# Routing — called after every solar_node run
+# Routing — called after every solar_node
 # ---------------------------------------------------------------------------
 def route_after_solar(state: AgentState) -> str:
-    if state["solar_result"].get("passed"):
+    if state["solar_result"]["passed"]:
         return "end"
     if state["iteration"] >= state["max_iterations"]:
-        return "end"
+        return "end"   # max iterations reached, accept current code
     return "analyze"
 
 
 # ---------------------------------------------------------------------------
-# Graph assembly
+# Graph
 # ---------------------------------------------------------------------------
 def build_graph():
     g = StateGraph(AgentState)
@@ -260,7 +268,7 @@ def build_graph():
     g.add_node("increment", increment_node)
 
     g.set_entry_point("developer")
-    g.add_edge("developer", "solar")
+    g.add_edge("developer",  "solar")
 
     g.add_conditional_edges(
         "solar",
@@ -270,81 +278,99 @@ def build_graph():
 
     g.add_edge("analyzer",  "repairer")
     g.add_edge("repairer",  "increment")
-    g.add_edge("increment", "solar")   # re-test; routing handles loop exit
+    g.add_edge("increment", "solar")   # re-test; routing handles exit
 
     return g.compile()
 
 
 # ---------------------------------------------------------------------------
-# Run pipeline on a slice of the dataset
+# Run pipeline on a list of tasks
 # ---------------------------------------------------------------------------
 def run_pipeline(
     prompts_path: str,
     model_dir: str,
     output_dir: str,
-    solar_bash: str = "",
-    data_path: str = "",
+    solar_bash: str,
+    model_name: str = "gpt",
+    sampling: int = 5,
+    temperature: float = 1.0,
     prompt_styles: dict = None,
-    num_samples: int = 5,
     max_iterations: int = 3,
     test_start: int = 0,
-    test_end: int = 10,
+    test_end: int = 5,
 ) -> list[dict]:
 
     if prompt_styles is None:
-        prompt_styles = {"developer": "agent", "analyzer": "agent", "repairer": "agent"}
+        prompt_styles = {
+            "developer": "agent",
+            "analyzer":  "agent",
+            "repairer":  "agent",
+        }
 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
+    Path(model_dir).mkdir(parents=True, exist_ok=True)
 
-    # Load prompts
+    # Load only the tasks we need
     with open(prompts_path, encoding="utf-8") as f:
-        all_tasks = [json.loads(l) for l in f if l.strip()]
+        all_tasks = [json.loads(line) for line in f if line.strip()]
     tasks = all_tasks[test_start:test_end]
+
+    if not tasks:
+        print(f"[ERROR] No tasks found in range [{test_start}, {test_end})")
+        return []
 
     graph = build_graph()
     results = []
 
-    for raw_task in tasks:
-        task_id = str(raw_task.get("task_id", "?"))
-        prompt  = raw_task.get("prompt", "")
+    for task in tasks:
+        task_id = str(task.get("task_id", "?"))
+        prompt  = task.get("prompt", "")
 
         print(f"\n{'='*60}")
-        print(f"Task {task_id}  ({test_start}–{test_end})")
+        print(f"Task {task_id}  (index {test_start}–{test_end})")
         print(f"{'='*60}")
 
-        initial_state: AgentState = {
+        initial: AgentState = {
             "task_id":        task_id,
             "prompt":         prompt,
             "model_dir":      model_dir,
-            "num_samples":    num_samples,
-            "max_iterations": max_iterations,
+            "output_dir":     output_dir,
             "solar_bash":     solar_bash,
-            "data_path":      data_path or prompts_path,
+            "data_path":      prompts_path,
+            "model_name":     model_name,
+            "sampling":       sampling,
+            "temperature":    temperature,
+            "max_iterations": max_iterations,
             "prompt_styles":  prompt_styles,
             "iteration":      0,
             "current_code":   "",
-            "solar_result":   {"passed": False, "biased_attrs": [], "missing_attrs": []},
-            "analysis":       "",
-            "history":        [],
+            "solar_result":   {
+                "passed": False,
+                "biased_attrs": [],
+                "missing_attrs": [],
+            },
+            "analysis": "",
+            "history":  [],
         }
 
-        final = graph.invoke(initial_state)
+        final = graph.invoke(initial)
 
         result = {
             "task_id":        task_id,
             "final_code":     final["current_code"],
             "iterations_run": final["iteration"] + 1,
-            "final_passed":   final["solar_result"].get("passed", False),
+            "final_passed":   final["solar_result"]["passed"],
             "history":        final["history"],
         }
         results.append(result)
 
         # Save per-task result
-        out_path = Path(output_dir) / f"task_{task_id}_result.json"
-        with open(out_path, "w", encoding="utf-8") as f:
+        out_file = Path(output_dir) / f"task_{task_id}_result.json"
+        with open(out_file, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
+        print(f"  → saved {out_file.name}")
 
-    # Save aggregate summary
+    # Aggregate summary
     total  = len(results)
     passed = sum(1 for r in results if r["final_passed"])
     summary = {
@@ -354,8 +380,8 @@ def run_pipeline(
         "avg_iterations": round(
             sum(r["iterations_run"] for r in results) / total, 2
         ) if total else 0,
-        "test_range":     [test_start, test_end],
-        "prompt_styles":  prompt_styles,
+        "test_range":    [test_start, test_end],
+        "prompt_styles": prompt_styles,
     }
     summary_path = Path(output_dir) / "summary.json"
     with open(summary_path, "w", encoding="utf-8") as f:
@@ -375,29 +401,36 @@ def run_pipeline(
 if __name__ == "__main__":
     import argparse
 
-    p = argparse.ArgumentParser(description="FairnessAgent LangGraph pipeline")
-    p.add_argument("--prompts_path",   required=True,
-                   help="Path to dataset/prompts.jsonl")
-    p.add_argument("--model_dir",      required=True,
-                   help="Base dir for Solar I/O (same structure Solar already uses)")
-    p.add_argument("--output_dir",     required=True,
-                   help="Where to write per-task JSON results")
-    p.add_argument("--solar_bash",     default="",
-                   help="Path to agent_commands_bash.sh. "
-                        "Leave empty to use cached Solar results (dev mode).")
-    p.add_argument("--data_path",      default="",
-                   help="Passed to Solar bash (usually same as prompts_path)")
-    p.add_argument("--num_samples",    type=int, default=5)
-    p.add_argument("--max_iterations", type=int, default=3)
-    p.add_argument("--test_start",     type=int, default=0)
-    p.add_argument("--test_end",       type=int, default=10)
+    p = argparse.ArgumentParser(
+        description="FairnessAgent — full pipeline: Developer→Solar→Analyzer→Repairer→Solar"
+    )
+    p.add_argument("--prompts_path",    required=True,
+                   help="Path to prompts JSONL file (e.g. dataset/prompts_sample.jsonl)")
+    p.add_argument("--model_dir",       required=True,
+                   help="Base output dir for Solar I/O (e.g. outputs/agent_test)")
+    p.add_argument("--output_dir",      required=True,
+                   help="Where to write per-task result JSON files")
+    p.add_argument("--solar_bash",      required=True,
+                   help="Path to commands/agent_commands_bash.sh")
+    p.add_argument("--model_name",      default="gpt",
+                   help="Model label passed to Solar bash (default: gpt)")
+    p.add_argument("--sampling",        type=int,   default=5,
+                   help="Number of code samples per task (default: 5)")
+    p.add_argument("--temperature",     type=float, default=1.0,
+                   help="LLM temperature for developer (default: 1.0)")
+    p.add_argument("--max_iterations",  type=int,   default=3,
+                   help="Max Analyzer→Repairer repair loops (default: 3)")
+    p.add_argument("--test_start",      type=int,   default=0,
+                   help="First task index in prompts file (default: 0)")
+    p.add_argument("--test_end",        type=int,   default=5,
+                   help="Last task index exclusive (default: 5)")
     p.add_argument("--developer_style", default="agent",
-                   choices=["agent", "default", "chain_of_thoughts",
+                   choices=["agent","default","chain_of_thoughts",
                             "positive_chain_of_thoughts"])
     p.add_argument("--analyzer_style",  default="agent",
-                   choices=["agent", "structured"])
+                   choices=["agent","structured"])
     p.add_argument("--repairer_style",  default="agent",
-                   choices=["agent", "minimal"])
+                   choices=["agent","minimal"])
     args = p.parse_args()
 
     run_pipeline(
@@ -405,13 +438,14 @@ if __name__ == "__main__":
         model_dir=args.model_dir,
         output_dir=args.output_dir,
         solar_bash=args.solar_bash,
-        data_path=args.data_path or args.prompts_path,
+        model_name=args.model_name,
+        sampling=args.sampling,
+        temperature=args.temperature,
         prompt_styles={
             "developer": args.developer_style,
             "analyzer":  args.analyzer_style,
             "repairer":  args.repairer_style,
         },
-        num_samples=args.num_samples,
         max_iterations=args.max_iterations,
         test_start=args.test_start,
         test_end=args.test_end,
