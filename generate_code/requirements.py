@@ -64,7 +64,8 @@ def extract_json_object(text: str):
 def analyst_conversation(style, qs, temp, model_name) -> str:
     if model_name == "gpt":
         response = gpt_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            # model="gpt-3.5-turbo",
+            model="gpt-5.2-thinking",
             temperature=temp,
             messages=[
                 {"role": "system", "content": style},
