@@ -17,38 +17,23 @@ MODEL_NAME="$6"
 TEST_START="${7:-0}"
 TEST_COUNT="${8:-0}"
 
-# output filename for prompt modifier (same dir as DATA_PATH)
-# MODIFIED_PROMPTS_FILENAME="prompts_modified.jsonl"
-DATA_DIR="$(dirname "$(realpath "$DATA_PATH")")"
-# MODIFIED_DATA_PATH="$DATA_DIR/$MODIFIED_PROMPTS_FILENAME"
-
 echo "SAMPLING: $SAMPLING"
 echo "TEMPERATURE: $TEMPERATURE"
 echo "PROMPT_STYLE: $PROMPT_STYLE"
 echo "DATA_PATH: $DATA_PATH"
-# echo "MODIFIED_DATA_PATH: $MODIFIED_DATA_PATH"
 echo "MODEL_DIR: $MODEL_DIR"
 echo "MODEL_NAME: $MODEL_NAME"
 echo "TEST_START: $TEST_START"
 echo "TEST_COUNT: $TEST_COUNT"
 echo "-------------------"
 
-# -------------------------
-# Helpers
-# -------------------------
-
 run_generator() {
-  # $1 = script (prompt_modifier.py / developer.py / reviewer.py / repairer.py)
-  # remaining args are passed as-is
   local script="$1"; shift
   cd "$CURRENT_DIR/../generate_code" || exit 1
   python "$script" "$@"
 }
 
 prepare_pytest_config_and_run() {
-  # $1 = response_base_dir
-  # $2 = log_dir
-  # $3 = report_base_dir
   local response_dir="$1"
   local log_dir="$2"
   local report_dir="$3"
@@ -64,7 +49,6 @@ prepare_pytest_config_and_run() {
 }
 
 run_postprocess() {
-  # $1 = agent_name (developer/repairer)
   local agent="$1"
 
   cd "$CURRENT_DIR/../fairness_test/" || exit 1
@@ -89,8 +73,6 @@ run_postprocess() {
 }
 
 run_test_phase() {
-  # $1 = agent_name (developer/repairer)
-  # $2 = response_dir (MODEL_DIR/response/<agent>)
   local agent="$1"
   local response_dir="$2"
 
@@ -103,43 +85,38 @@ run_test_phase() {
   run_postprocess "$agent"
 }
 
-# -------------------------
-# Pipeline
-# -------------------------
-
-# echo "prompt_modifier.py $DATA_PATH -> $MODIFIED_DATA_PATH"
-echo "developer.py $DATA_PATH $MODEL_DIR/response/developer $SAMPLING $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
-echo "parse_bias_info.py $MODEL_DIR/test_result/developer/log_files $MODEL_DIR/test_result/developer/bias_info_files $SAMPLING"
-echo "summary_result.py $MODEL_DIR"
-echo "count_bias.py $MODEL_DIR"
-echo "count_bias_leaning.py $MODEL_DIR"
+echo "requirements.py $DATA_PATH $MODEL_DIR/response/requirements $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
+echo "developer.py $DATA_PATH $MODEL_DIR/response/requirements $MODEL_DIR/response/developer $SAMPLING $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
+echo "reviewer.py $DATA_PATH $MODEL_DIR/response/developer $MODEL_DIR/response/reviewer $SAMPLING $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
+echo "repairer.py $DATA_PATH $MODEL_DIR/response/developer $MODEL_DIR/response/reviewer $MODEL_DIR/response/repairer $SAMPLING $TEMPERATURE $PROMPT_STYLE $MODEL_NAME"
 echo "===================="
 
-# run_generator prompt_modifier.py \
-#   --jsonl_input_file_path="$DATA_PATH" \
-#   --output_prompt_filename=$MODIFIED_PROMPTS_FILENAME \
-#   --num_samples=1 \
-#   --temperature="$TEMPERATURE" \
-#   --prompt_style="$PROMPT_STYLE" \
-#   --model_name="$MODEL_NAME" \
-#   --test_start="$TEST_START" \
-#   --test_end="$TEST_COUNT"
-  
-# # 1) Developer: generate (use modified prompts)
-# run_generator developer.py \
-#   --jsonl_input_file_path="$DATA_PATH" \
-#   --output_base_dir="$MODEL_DIR/response/developer" \
-#   --num_samples="$SAMPLING" \
-#   --temperature="$TEMPERATURE" \
-#   --prompt_style="$PROMPT_STYLE" \
-#   --model_name="$MODEL_NAME" \
-#   --test_start="$TEST_START" \
-#   --test_end="$TEST_COUNT"
+# 1) Requirements analyst
+run_generator requirements.py \
+  --prompts_jsonl_path="$DATA_PATH" \
+  --output_base_dir="$MODEL_DIR/response/requirements" \
+  --temperature="$TEMPERATURE" \
+  --prompt_style="$PROMPT_STYLE" \
+  --model_name="$MODEL_NAME" \
+  --test_start="$TEST_START" \
+  --test_end="$TEST_COUNT"
 
-# # 2) Developer: test + parse + summarize
-# run_test_phase "developer" "$MODEL_DIR/response/developer"
+# 2) Developer
+run_generator developer.py \
+  --jsonl_input_file_path="$DATA_PATH" \
+  --requirements_base_dir="$MODEL_DIR/response/requirements" \
+  --output_base_dir="$MODEL_DIR/response/developer" \
+  --num_samples="$SAMPLING" \
+  --temperature="$TEMPERATURE" \
+  --prompt_style="$PROMPT_STYLE" \
+  --model_name="$MODEL_NAME" \
+  --test_start="$TEST_START" \
+  --test_end="$TEST_COUNT"
 
-# 3) Reviewer: generate (use modified prompts for consistency)
+# 3) Developer test + parse + summarize
+run_test_phase "developer" "$MODEL_DIR/response/developer"
+
+# 4) Reviewer
 run_generator reviewer.py \
   --prompts_jsonl_path="$DATA_PATH" \
   --src_gc_base_dir="$MODEL_DIR/response/developer" \
@@ -153,7 +130,7 @@ run_generator reviewer.py \
   --test_start="$TEST_START" \
   --test_end="$TEST_COUNT"
 
-# 4) Repairer: generate
+# 5) Repairer
 run_generator repairer.py \
   --prompts_jsonl_path="$DATA_PATH" \
   --src_gc_base_dir="$MODEL_DIR/response/developer" \
@@ -166,5 +143,5 @@ run_generator repairer.py \
   --test_start="$TEST_START" \
   --test_end="$TEST_COUNT"
 
-# 5) Repairer: test + parse + summarize
+# 6) Repairer test + parse + summarize
 run_test_phase "repairer" "$MODEL_DIR/response/repairer"
