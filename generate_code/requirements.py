@@ -64,8 +64,8 @@ def extract_json_object(text: str):
 def analyst_conversation(style, qs, temp, model_name) -> str:
     if model_name == "gpt":
         response = gpt_client.chat.completions.create(
-            # model="gpt-3.5-turbo",
-            model="gpt-4o-mini",
+            model="gpt-3.5-turbo",
+            # model="gpt-4o-mini",
             temperature=temp,
             messages=[
                 {"role": "system", "content": style},
@@ -124,8 +124,9 @@ Your task is to determine which dataclass attributes are relevant for implementi
 Rules:
 1. Use only attributes defined in the dataclass.
 2. Base your reasoning only on the information present in the prompt (method name, docstring, attribute names, or comments).
-3. Do not assume social norms, biases, or myths.
+3. Do not presume social norms, biases, or myths.
 4. Select attributes that are clearly relevant to making the decision described in the prompt.
+5. Do not use the demographic attributes unless the task needs them.
 
 Output ONLY valid JSON in this format:
 {
