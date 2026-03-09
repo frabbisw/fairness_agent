@@ -101,20 +101,20 @@ run_generator requirements.py \
   --test_start="$TEST_START" \
   --test_end="$TEST_COUNT"
 
-# # 2) Developer
-# run_generator developer.py \
-#   --jsonl_input_file_path="$DATA_PATH" \
-#   --requirements_base_dir="$MODEL_DIR/response/requirements" \
-#   --output_base_dir="$MODEL_DIR/response/developer" \
-#   --num_samples="$SAMPLING" \
-#   --temperature="$TEMPERATURE" \
-#   --prompt_style="$PROMPT_STYLE" \
-#   --model_name="$MODEL_NAME" \
-#   --test_start="$TEST_START" \
-#   --test_end="$TEST_COUNT"
+# 2) Developer
+run_generator developer.py \
+  --jsonl_input_file_path="$DATA_PATH" \
+  --requirements_base_dir="$MODEL_DIR/response/requirements" \
+  --output_base_dir="$MODEL_DIR/response/developer" \
+  --num_samples="$SAMPLING" \
+  --temperature="$TEMPERATURE" \
+  --prompt_style="$PROMPT_STYLE" \
+  --model_name="$MODEL_NAME" \
+  --test_start="$TEST_START" \
+  --test_end="$TEST_COUNT"
 
-# # 3) Developer test + parse + summarize
-# run_test_phase "developer" "$MODEL_DIR/response/developer"
+# 3) Developer test + parse + summarize
+run_test_phase "developer" "$MODEL_DIR/response/developer"
 
 # # 4) Reviewer
 # run_generator reviewer.py \
