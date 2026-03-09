@@ -126,7 +126,7 @@ Rules:
 2. Base your reasoning only on the information present in the prompt (method name, docstring, attribute names, or comments).
 3. Do not presume social norms, biases, or myths.
 4. Select attributes that are clearly relevant to making the decision described in the prompt.
-5. Do not use the demographic attributes unless the task needs them.
+5. Each selected attribute must have a reason to be selected; do not get biased toward any attribute.
 
 Output ONLY valid JSON in this format:
 {
