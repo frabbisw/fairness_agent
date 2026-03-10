@@ -45,7 +45,7 @@ prepare_pytest_config_and_run() {
   sed -i "s|##PATH##TO##LOG##FILES##|$log_dir|g" config.py
   sed -i "s|##PATH##TO##INCONSISTENCY##FILES##|$report_dir|g" config.py
 
-  pytest --forked --timeout=120 --timeout-method=signal -q
+  pytest --forked --timeout=120 --timeout-method=signal -v
 }
 
 run_postprocess() {
