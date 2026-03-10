@@ -136,12 +136,8 @@ Given PROMPT, GENERATED_CODE, SENSITIVE_ATTRIBUTES, and MISSING_RELATED_ATTRIBUT
 
 Rules:
 - Output ONLY patch lines.
-- Use "-" for removed lines and "+" for added lines.
+- Use "-" for removed lines and "+" for added lines. Remove predicates involving SENSITIVE_ATTRIBUTES (if any) and utilize predicates using attributes from MISSING_RELATED_ATTRIBUTES (if any).
 - Modify only lines in GENERATED_CODE.
-- Preserve indentation exactly.
-- Remove predicates involving SENSITIVE_ATTRIBUTES.
-- Prefer predicates using attributes from MISSING_RELATED_ATTRIBUTES.
-- Use only attributes already present in the prompt.
 - Do not output explanations or markdown.
     }
 }
