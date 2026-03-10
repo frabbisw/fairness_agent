@@ -131,10 +131,7 @@ Apply the PATCH to CURRENT_METHOD.
 Rules:
 - Lines starting with "-" must be removed.
 - Lines starting with "+" must be added.
-- Match lines exactly including indentation.
-- Preserve the method signature.
-- Output ONLY the final repaired method code.
-- Do not output the patch or explanations.
+- Output ONLY the final repaired method code without any explanation.
 - maintain correct code syntax.'''
     }
 }
