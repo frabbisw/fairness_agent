@@ -114,15 +114,30 @@ def repair_conversation(style, qs, temp, model_name):
 
 
 # Prompt styles (same dict pattern)
+# prompt_styles = {
+#     "gpt": {        
+#         "agent": '''You are a code repairer. Apply the given JSON edits to CURRENT_METHOD exactly. 
+#         "old" strings must be matched verbatim; perform operations in order. 
+#         Output ONLY the final repaired method code (signature+body). 
+#         No class, no markdown, no extra text. Do not change the method signature (including self).'''
+#     }
+# }
 prompt_styles = {
-    "gpt": {        
-        "agent": '''You are a code repairer. Apply the given JSON edits to CURRENT_METHOD exactly. 
-        "old" strings must be matched verbatim; perform operations in order. 
-        Output ONLY the final repaired method code (signature+body). 
-        No class, no markdown, no extra text. Do not change the method signature (including self).'''
+    "gpt": {
+        "agent": '''You are a code repairer.
+
+Apply the PATCH to CURRENT_METHOD.
+
+Rules:
+- Lines starting with "-" must be removed.
+- Lines starting with "+" must be added.
+- Match lines exactly including indentation.
+- Preserve the method signature.
+- Output ONLY the final repaired method code.
+- Do not output the patch or explanations.
+- maintain correct code syntax.'''
     }
 }
-
 def generate_repaired_code(
     prompts_file_path: str,
     src_gc_dir: str,
