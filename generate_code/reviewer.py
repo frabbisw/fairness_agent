@@ -138,11 +138,9 @@ Rules:
 - Output ONLY patch lines.
 - Use "-" for removed lines and "+" for added lines. Remove predicates involving SENSITIVE_ATTRIBUTES (if any) and utilize predicates using attributes from MISSING_RELATED_ATTRIBUTES (if any).
 - Modify only lines in GENERATED_CODE.
-- Do not output explanations or markdown.
+- Do not output explanations or markdown.'''
     }
 }
-'''
-
 
 def generate_reviews_from_bias_info(
     prompts_file_path: str,
