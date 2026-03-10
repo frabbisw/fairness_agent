@@ -68,7 +68,7 @@ def repair_conversation(style, qs, temp, model_name):
     """
     if model_name == "gpt":
         response = gpt_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-5.4",
             temperature=temp,
             messages=[{"role": "system", "content": style}, {"role": "user", "content": qs}],
         )
