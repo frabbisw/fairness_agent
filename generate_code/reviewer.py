@@ -119,16 +119,33 @@ def review_conversation(style, qs, temp, model_name) -> str:
 # No code, no extra text.'''
 #     }
 # }
+# prompt_styles = {
+#     "gpt": {
+#         'agent': '''You are a fairness-aware code reviewer.
+# Given PROMPT, GENERATED_CODE, SENSITIVE_ATTRIBUTES, and MISSING_RELATED_ATTRIBUTES, output ONLY JSON edits {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}.
+# "old" MUST be an exact substring of GENERATED_CODE.
+# Goal: remove all predicates involving SENSITIVE_ATTRIBUTES and ensure all MISSING_RELATED_ATTRIBUTES are used instead.
+# Do NOT change numeric thresholds/sets, do NOT introduce new attributes/functions, and do NOT delete control-structure lines (if/elif/else/return); only edit condition substrings.
+# No code, no extra text.'''
+#     }
+# }
 prompt_styles = {
     "gpt": {
-        'agent': '''You are a fairness-aware code reviewer.
-Given PROMPT, GENERATED_CODE, SENSITIVE_ATTRIBUTES, and MISSING_RELATED_ATTRIBUTES, output ONLY JSON edits {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}.
-"old" MUST be an exact substring of GENERATED_CODE.
-Goal: remove all predicates involving SENSITIVE_ATTRIBUTES and ensure all MISSING_RELATED_ATTRIBUTES are used instead.
-Do NOT change numeric thresholds/sets, do NOT introduce new attributes/functions, and do NOT delete control-structure lines (if/elif/else/return); only edit condition substrings.
-No code, no extra text.'''
+        "agent": '''You are a code reviewer.
+Given PROMPT, GENERATED_CODE, SENSITIVE_ATTRIBUTES, and MISSING_RELATED_ATTRIBUTES, produce a minimal diff-style patch to fix fairness issues.
+
+Rules:
+- Output ONLY patch lines.
+- Use "-" for removed lines and "+" for added lines.
+- Modify only lines in GENERATED_CODE.
+- Preserve indentation exactly.
+- Remove predicates involving SENSITIVE_ATTRIBUTES.
+- Prefer predicates using attributes from MISSING_RELATED_ATTRIBUTES.
+- Use only attributes already present in the prompt.
+- Do not output explanations or markdown.
     }
 }
+'''
 
 
 def generate_reviews_from_bias_info(
