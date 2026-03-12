@@ -112,31 +112,24 @@ def review_conversation(style, qs, temp, model_name) -> str:
 # --- Prompt styles (same dict pattern as developer.py) ---
 # prompt_styles = {
 #     "gpt": {
-#         'agent': '''You are a fairness-aware code reviewer.
-# Given PROMPT, GENERATED_CODE (one method), and SENSITIVE_ATTRIBUTES (comma-separated), output ONLY JSON edits {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}. "old" MUST be an exact substring of GENERATED_CODE.
-# Goal: remove all dependence on SENSITIVE_ATTRIBUTES by deleting their boolean predicates (and adjacent and/or) while keeping other logic unchanged.
-# Do NOT change numeric thresholds/sets, do NOT add new predicates/attributes/functions, and do NOT delete control-structure lines (if/elif/else/return); only edit condition substrings.
-# No code, no extra text.'''
-#     }
-# }
-# prompt_styles = {
-#     "gpt": {
-#         'agent': '''You are a fairness-aware code reviewer.
-# Given PROMPT, GENERATED_CODE, SENSITIVE_ATTRIBUTES, and MISSING_RELATED_ATTRIBUTES, output ONLY JSON edits {"edits":[{"op":"replace","old":"...","new":"..."},{"op":"delete","old":"..."}]}.
-# "old" MUST be an exact substring of GENERATED_CODE.
-# Goal: remove all predicates involving SENSITIVE_ATTRIBUTES and ensure all MISSING_RELATED_ATTRIBUTES are used instead.
-# Do NOT change numeric thresholds/sets, do NOT introduce new attributes/functions, and do NOT delete control-structure lines (if/elif/else/return); only edit condition substrings.
-# No code, no extra text.'''
+#         "agent": '''You are a code reviewer.
+# Given PROMPT, GENERATED_CODE, SENSITIVE_ATTRIBUTES, and MISSING_RELATED_ATTRIBUTES, produce a minimal diff-style patch to fix fairness issues.
+
+# Rules:
+# - Output ONLY patch lines.
+# - Use "-" for removed lines and "+" for added lines. Remove predicates involving SENSITIVE_ATTRIBUTES (if any) and utilize predicates using attributes from MISSING_RELATED_ATTRIBUTES (if any).
+# - Modify only lines in GENERATED_CODE.
+# - Do not output explanations or markdown.'''
 #     }
 # }
 prompt_styles = {
     "gpt": {
         "agent": '''You are a code reviewer.
-Given PROMPT, GENERATED_CODE, SENSITIVE_ATTRIBUTES, and MISSING_RELATED_ATTRIBUTES, produce a minimal diff-style patch to fix fairness issues.
+Given PROMPT, GENERATED_CODE, and SENSITIVE_ATTRIBUTES, produce a minimal diff-style patch to fix fairness issues.
 
 Rules:
 - Output ONLY patch lines.
-- Use "-" for removed lines and "+" for added lines. Remove predicates involving SENSITIVE_ATTRIBUTES (if any) and utilize predicates using attributes from MISSING_RELATED_ATTRIBUTES (if any).
+- Use "-" for removed lines and "+" for added lines. Remove predicates involving SENSITIVE_ATTRIBUTES (if any).
 - Modify only lines in GENERATED_CODE.
 - Do not output explanations or markdown.'''
     }
@@ -211,6 +204,9 @@ def generate_reviews_from_bias_info(
                     continue
 
                 if bias_obj["bias_info"] == "none":
+                    json.dump({"review": "all is good! no updates needed"}, out_f, ensure_ascii=False)
+                    out_f.write("\n")
+                    continue
                     bias_obj["bias_info"] = "<no bias attribute presents. skip>"
                 if related_obj["related_info"] == "none":
                     related_obj["related_info"] = "<all related attributes present. skip>"
@@ -224,8 +220,8 @@ def generate_reviews_from_bias_info(
                     f"{code_obj.get('generated_code','')}\n\n"
                     "SENSITIVE_ATTRIBUTES:\n"
                     f"{bias_obj['bias_info']}\n"
-                    "MISSING_RELATED_ATTRIBUTES"
-                    f"{related_obj['related_info']}\n"
+                    # "MISSING_RELATED_ATTRIBUTES"
+                    # f"{related_obj['related_info']}\n"
                 )
 
                 instruction = review_conversation(style, qs, temperature, model_name)
