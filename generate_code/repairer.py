@@ -191,7 +191,7 @@ def generate_repaired_code(
                 review_text = (rev_obj.get("review", "") or "").strip()
 
                 # If no bias / pass => keep the original method
-                if review_text.lower() == "pass":
+                if review_text.lower().strip() == "all is good! no updates needed":
                     json.dump({"generated_code": current_method}, out_f, ensure_ascii=False)
                     out_f.write("\n")
                     continue
