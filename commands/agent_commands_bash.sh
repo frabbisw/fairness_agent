@@ -102,11 +102,41 @@ echo "===================="
 #   --test_start="$TEST_START" \
 #   --test_end="$TEST_COUNT"
 
-# # 2) Developer
-# run_generator developer.py \
-#   --jsonl_input_file_path="$DATA_PATH" \
-#   --requirements_base_dir="$MODEL_DIR/response/requirements" \
-#   --output_base_dir="$MODEL_DIR/response/developer" \
+# 2) Developer
+run_generator developer.py \
+  --jsonl_input_file_path="$DATA_PATH" \
+  --requirements_base_dir="$MODEL_DIR/response/requirements" \
+  --output_base_dir="$MODEL_DIR/response/developer" \
+  --num_samples="$SAMPLING" \
+  --temperature="$TEMPERATURE" \
+  --prompt_style="$PROMPT_STYLE" \
+  --model_name="$MODEL_NAME" \
+  --test_start="$TEST_START" \
+  --test_end="$TEST_COUNT"
+
+# 3) Developer test + parse + summarize
+run_test_phase "developer" "$MODEL_DIR/response/developer"
+
+# # 4) Reviewer
+# run_generator reviewer.py \
+#   --prompts_jsonl_path="$DATA_PATH" \
+#   --src_gc_base_dir="$MODEL_DIR/response/developer" \
+#   --target_review_base_dir="$MODEL_DIR/response/reviewer" \
+#   --num_samples="$SAMPLING" \
+#   --temperature="$TEMPERATURE" \
+#   --prompt_style="$PROMPT_STYLE" \
+#   --model_name="$MODEL_NAME" \
+#   --bias_info_base_path="$MODEL_DIR/test_result/developer/bias_info_files" \
+#   --related_info_base_path="$MODEL_DIR/test_result/developer/bias_info_files" \
+#   --test_start="$TEST_START" \
+#   --test_end="$TEST_COUNT"
+
+# # 5) Repairer
+# run_generator repairer.py \
+#   --prompts_jsonl_path="$DATA_PATH" \
+#   --src_gc_base_dir="$MODEL_DIR/response/developer" \
+#   --src_review_base_dir="$MODEL_DIR/response/reviewer" \
+#   --target_repair_base_dir="$MODEL_DIR/response/repairer" \
 #   --num_samples="$SAMPLING" \
 #   --temperature="$TEMPERATURE" \
 #   --prompt_style="$PROMPT_STYLE" \
@@ -114,35 +144,5 @@ echo "===================="
 #   --test_start="$TEST_START" \
 #   --test_end="$TEST_COUNT"
 
-# # 3) Developer test + parse + summarize
-# run_test_phase "developer" "$MODEL_DIR/response/developer"
-
-# 4) Reviewer
-run_generator reviewer.py \
-  --prompts_jsonl_path="$DATA_PATH" \
-  --src_gc_base_dir="$MODEL_DIR/response/developer" \
-  --target_review_base_dir="$MODEL_DIR/response/reviewer" \
-  --num_samples="$SAMPLING" \
-  --temperature="$TEMPERATURE" \
-  --prompt_style="$PROMPT_STYLE" \
-  --model_name="$MODEL_NAME" \
-  --bias_info_base_path="$MODEL_DIR/test_result/developer/bias_info_files" \
-  --related_info_base_path="$MODEL_DIR/test_result/developer/bias_info_files" \
-  --test_start="$TEST_START" \
-  --test_end="$TEST_COUNT"
-
-# 5) Repairer
-run_generator repairer.py \
-  --prompts_jsonl_path="$DATA_PATH" \
-  --src_gc_base_dir="$MODEL_DIR/response/developer" \
-  --src_review_base_dir="$MODEL_DIR/response/reviewer" \
-  --target_repair_base_dir="$MODEL_DIR/response/repairer" \
-  --num_samples="$SAMPLING" \
-  --temperature="$TEMPERATURE" \
-  --prompt_style="$PROMPT_STYLE" \
-  --model_name="$MODEL_NAME" \
-  --test_start="$TEST_START" \
-  --test_end="$TEST_COUNT"
-
-# 6) Repairer test + parse + summarize
-run_test_phase "repairer" "$MODEL_DIR/response/repairer"
+# # 6) Repairer test + parse + summarize
+# run_test_phase "repairer" "$MODEL_DIR/response/repairer"
